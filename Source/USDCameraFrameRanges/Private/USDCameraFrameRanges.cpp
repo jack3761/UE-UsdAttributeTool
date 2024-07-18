@@ -49,6 +49,8 @@
 
 #include "CineCameraComponent.h"
 #include "UsdAttributeFunctionLibraryBPLibrary.h"
+#include "Sections/MovieSceneFloatSection.h"
+#include "Tracks/MovieSceneFloatTrack.h"
 
 static const FName USDCameraFrameRangesTabName("USDCameraFrameRanges");
 
@@ -130,8 +132,9 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
             ];
     }
 
-	TSharedPtr<SEditableTextBox> InputTextBox;
-	InputTextBox = SNew(SEditableTextBox);
+    TSharedPtr<SEditableTextBox> SequenceInputTextBox = SNew(SEditableTextBox);
+	TSharedPtr<SEditableTextBox> PrimInputTextBox = SNew(SEditableTextBox);
+	TSharedPtr<SEditableTextBox> AttrInputTextBox = SNew(SEditableTextBox);
 
     TSharedPtr<SVerticalBox> CameraList = SNew(SVerticalBox);
 
@@ -172,9 +175,47 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
 		[
-			InputTextBox.ToSharedRef()
+			SequenceInputTextBox.ToSharedRef()
 		]
 	];
+
+	CameraList->AddSlot()
+	.Padding(10)
+	[
+		SNew(SVerticalBox)
+		+SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(20)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			[
+				PrimInputTextBox.ToSharedRef()
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			[
+				AttrInputTextBox.ToSharedRef()
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			[
+				SNew(SButton)
+				.Text(FText::FromString(TEXT("Export to sequence")))
+				.OnClicked_Lambda([this, StageActor, PrimInputTextBox, AttrInputTextBox, SequenceInputTextBox]()
+				{
+					return OnAttributeExportButtonClicked(StageActor, PrimInputTextBox->GetText().ToString(), AttrInputTextBox->GetText().ToString(), SequenceInputTextBox->GetText().ToString());
+				})
+				// .OnClicked(FOnClicked::CreateRaw(this, &FUSDCameraFrameRangesModule::OnAttributeExportButtonClicked,
+				// 	StageActor,
+				// 	PrimInputTextBox->GetText().ToString(),
+				// 	AttrInputTextBox->GetText().ToString(),
+				// 	SequenceInputTextBox->GetText().ToString()))
+			]
+		]
+	];
+
 
 
     // Loop through Cameras array and create a row widget for each camera
@@ -208,9 +249,9 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
             [
                 SNew(SButton)
                 .Text(FText::FromString(TEXT("Duplicate")))
-            	.OnClicked_Lambda([this, StageActor, Camera, InputTextBox]()
+            	.OnClicked_Lambda([this, StageActor, Camera, SequenceInputTextBox]()
             	{
-            		return OnDuplicateButtonClicked(StageActor, Camera, InputTextBox->GetText().ToString());
+            		return OnDuplicateButtonClicked(StageActor, Camera, SequenceInputTextBox->GetText().ToString());
             	})
                 // .OnClicked(FOnClicked::CreateRaw(this, &FUSDCameraFrameRangesModule::OnDuplicateButtonClicked, StageActor, Camera, InputTextBox->GetText().ToString()))
             ]
@@ -244,7 +285,6 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
 			SNew(SButton)
 			.Text(FText::FromString(TEXT("Material swap")))
 			.OnClicked(FOnClicked::CreateRaw(this, &FUSDCameraFrameRangesModule::OnMaterialSwapButtonClicked, StageActor))
-			
 		]
 	];
 
@@ -409,6 +449,56 @@ FReply FUSDCameraFrameRangesModule::OnMaterialSwapButtonClicked(TObjectPtr<AUsdS
 			}
 		}
 	}
+	return FReply::Handled();
+}
+
+FReply FUSDCameraFrameRangesModule::OnAttributeExportButtonClicked(TObjectPtr<AUsdStageActor> StageActor,
+	FString InputPrim, FString InputAttr, FString LevelSequencePath)
+{
+	
+	ULevelSequence* LevelSequence = Cast<ULevelSequence>(StaticLoadObject(ULevelSequence::StaticClass(), nullptr, *LevelSequencePath));
+
+	if (LevelSequence == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No level sequence found at path %s"), *LevelSequencePath);
+		FReply::Unhandled();
+	}
+	
+	UMovieSceneFloatTrack* FloatTrack = LevelSequence->MovieScene->AddTrack<UMovieSceneFloatTrack>();
+	UMovieSceneFloatSection* FloatSection = Cast<UMovieSceneFloatSection>(FloatTrack->CreateNewSection());
+	
+	FMovieSceneFloatChannel* FloatVal = FloatSection->GetChannelProxy().GetChannel<FMovieSceneFloatChannel>(0);
+
+	UE::FUsdAttribute TargetAttr = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal(StageActor, InputPrim, InputAttr);
+
+	TArray<double> TimeSamples;
+	TargetAttr.GetTimeSamples(TimeSamples);
+
+
+	if (TimeSamples.Num() > 1)
+	{
+		int StartFrame = TimeSamples[0];
+		int EndFrame = TimeSamples.Last();
+	
+		int TicksPerFrame = LevelSequence->MovieScene->GetTickResolution().AsDecimal() / LevelSequence->MovieScene->GetDisplayRate().AsDecimal();
+		FloatSection->SetRange(TRange<FFrameNumber>(FFrameNumber(StartFrame * TicksPerFrame), FFrameNumber(EndFrame * TicksPerFrame)));
+	
+		for (double Time : TimeSamples)
+		{
+			int KeyInt = static_cast<int>(Time);
+			FFrameNumber FrameNumber = FFrameNumber(KeyInt * TicksPerFrame);
+			float AttrVal = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, InputPrim, InputAttr, Time);
+
+			FloatVal->AddConstantKey(FrameNumber, AttrVal);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No timesamples found on specified attribute"))
+	}
+
+	FloatTrack->AddSection(*FloatSection);
+
 	return FReply::Handled();
 }
 

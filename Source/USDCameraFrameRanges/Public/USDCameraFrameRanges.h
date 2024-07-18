@@ -74,6 +74,7 @@ private:
 	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& SpawnTabArgs);
 	FReply OnDuplicateButtonClicked(TObjectPtr<AUsdStageActor> StageActor, FCameraInfo Camera, FString LevelSequencePath);
 	FReply OnMaterialSwapButtonClicked(TObjectPtr<AUsdStageActor> StageActor);
+	FReply OnAttributeExportButtonClicked(TObjectPtr<AUsdStageActor> StageActor, FString InputPrim, FString InputAttr, FString LevelSequencePath);
 	TArray<UMaterial*>* GetAllMaterials();
 
 	void AddCameraToLevelSequence(FString LevelSequencePath, TObjectPtr<ACineCameraActor> CameraActor, TObjectPtr<AUsdStageActor> StageActor, FCameraInfo Camera);
