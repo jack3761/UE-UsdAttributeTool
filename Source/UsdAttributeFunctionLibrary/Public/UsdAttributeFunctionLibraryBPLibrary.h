@@ -51,11 +51,26 @@ namespace UE
 class AUsdStageActor;
 
 UCLASS()
-class UUsdAttributeFunctionLibraryBPLibrary : public UBlueprintFunctionLibrary
+class USDATTRIBUTELIBRARY_API UUsdAttributeFunctionLibraryBPLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_UCLASS_BODY()
 	
 public:
+	
+	static UE::FUsdAttribute GetUsdAttributeInternal(AUsdStageActor* StageActor, FString PrimName, FString AttrName);
+	
+	// TODO implement all of these in the header instead of the cpp
+	template <typename T>
+	static T ExtractAttributeValue(UE::FVtValue& Value);
+	
+	template <typename T>
+	static T GetUsdAttributeValueInternal(AUsdStageActor* StageActor, FString PrimName, FString AttrName);
+
+	template <typename T>
+	static T GetUsdAnimatedAttributeValueInternal(AUsdStageActor* StageActor, FString PrimName, FString AttrName, double TimeSample);
+
+	template <typename T>
+	static FVector ConvertUsdVectorToFVector(const pxr::VtValue& pxrValue);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "UsdAttributes")
 	static FVector GetUsdVec3Attribute(AUsdStageActor* StageActor, FString PrimName, FString AttrName);
@@ -84,7 +99,72 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "USD Attributes")
 	static FRotator ConvertToUnrealRotator(FVector InputVector);
 
+	static void GetSdfPathWithName(UE::FUsdPrim& CurrentPrim, FString TargetName, UE::FSdfPath& OutPath);
 
 };
 
+template <typename T>
+T UUsdAttributeFunctionLibraryBPLibrary::ExtractAttributeValue(UE::FVtValue& Value)
+{
+	pxr::VtValue& PxrValue = Value.GetUsdValue();
+	if (PxrValue.IsHolding<T>())
+	{
+		T AttrValue = PxrValue.Get<T>();
+		UE_LOG(LogTemp, Log, TEXT("Successfully retrieved attribute"));
+		return AttrValue;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Attribute is not holding a value of specified type"));
+	}
+
+	return T();
+}
+
+
+
+template <typename T>
+T UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeValueInternal(
+	AUsdStageActor* StageActor, FString PrimName, FString AttrName)
+{
+	UE::FUsdAttribute Attr = GetUsdAttributeInternal(StageActor, PrimName, AttrName);
+
+	UE::FVtValue Value;
+
+	bool bSuccess = Attr.Get(Value);
+
+	if (!bSuccess)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to get value for Attribute: %s"), *Attr.GetName().ToString());
+		return T();
+	}
+
+	return ExtractAttributeValue<T>(Value);
+}
+
+template <typename T>
+T UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedAttributeValueInternal(
+	AUsdStageActor* StageActor, FString PrimName, FString AttrName, double TimeSample)
+{
+	UE::FUsdAttribute Attr = GetUsdAttributeInternal(StageActor, PrimName, AttrName);
+
+	UE::FVtValue Value;
+
+	bool bSuccess = Attr.Get(Value, TimeSample);
+
+	if (!bSuccess)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to get animated value for Attribute: %s"), *Attr.GetName().ToString());
+		return T();
+	}
+
+	return ExtractAttributeValue<T>(Value);
+}
+
+template <typename T>
+FVector UUsdAttributeFunctionLibraryBPLibrary::ConvertUsdVectorToFVector(const pxr::VtValue& pxrValue)
+{
+	T pxrVec = pxrValue.Get<T>();
+	return FVector(static_cast<double>(pxrVec[0]), static_cast<double>(pxrVec[1]), static_cast<double>(pxrVec[2]));
+}
 

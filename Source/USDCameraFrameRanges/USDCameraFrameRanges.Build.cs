@@ -11,6 +11,7 @@ public class USDCameraFrameRanges : ModuleRules
 		PublicIncludePaths.AddRange(
 			new string[] {
 				// ... add public include paths required here ...
+				"UsdAttributeFunctionLibrary",
 			}
 			);
 				
@@ -18,6 +19,7 @@ public class USDCameraFrameRanges : ModuleRules
 		PrivateIncludePaths.AddRange(
 			new string[] {
 				// ... add other private include paths required here ...
+				"UsdAttributeFunctionLibrary",
 			}
 			);
 			
@@ -27,6 +29,7 @@ public class USDCameraFrameRanges : ModuleRules
 			{
 				"Core",
 				// ... add other public dependencies that you statically link with here ...
+				"UsdAttributeFunctionLibrary",
 			}
 			);
 			

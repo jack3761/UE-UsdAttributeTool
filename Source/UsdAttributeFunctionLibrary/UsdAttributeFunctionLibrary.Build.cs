@@ -8,6 +8,9 @@ public class UsdAttributeFunctionLibrary : ModuleRules
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
+		PublicDefinitions.Add("USDATTRIBUTELIBRARY_API=__declspec(dllexport)");
+
+		
 		PublicIncludePaths.AddRange(
 			new string[] {
 				// ... add public include paths required here ...

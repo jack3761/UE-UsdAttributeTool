@@ -45,9 +45,10 @@
 #include "Sections/MovieScene3DTransformSection.h"
 #include "UObject/SavePackage.h"
 
-#include "UsdAttributeFunctionLibrary/Public/UsdAttributeFunctionLibraryBPLibrary.h"
+#include "UsdAttributeFunctionLibrary/Public/UsdAttributeFunctionLibrary.h"
 
 #include "CineCameraComponent.h"
+#include "UsdAttributeFunctionLibraryBPLibrary.h"
 
 static const FName USDCameraFrameRangesTabName("USDCameraFrameRanges");
 
@@ -341,11 +342,25 @@ FReply FUSDCameraFrameRangesModule::OnDuplicateButtonClicked(TObjectPtr<AUsdStag
 
 	// NewCameraActor->GetCineCameraComponent()->SetCurrentFocalLength(Camera.FocalLength);
 	
-	NewCameraActor->GetCineCameraComponent()->CurrentFocalLength = Camera.FocalLength;
-	NewCameraActor->GetCineCameraComponent()->FocusSettings.ManualFocusDistance = Camera.FocusDistance;
-	NewCameraActor->GetCineCameraComponent()->CurrentAperture = Camera.FStop;
-	NewCameraActor->GetCineCameraComponent()->Filmback.SensorWidth = Camera.HorizontalAperture;
-	NewCameraActor->GetCineCameraComponent()->Filmback.SensorHeight = Camera.VerticalAperture;
+	// NewCameraActor->GetCineCameraComponent()->CurrentFocalLength = Camera.FocalLength;
+	// NewCameraActor->GetCineCameraComponent()->FocusSettings.ManualFocusDistance = Camera.FocusDistance;
+	// NewCameraActor->GetCineCameraComponent()->CurrentAperture = Camera.FStop;
+	// NewCameraActor->GetCineCameraComponent()->Filmback.SensorWidth = Camera.HorizontalAperture;
+	// NewCameraActor->GetCineCameraComponent()->Filmback.SensorHeight = Camera.VerticalAperture;
+
+	FCameraFocusSettings FocusSettings;
+	FocusSettings.ManualFocusDistance = Camera.FocusDistance;
+	
+	FCameraFilmbackSettings FilmbackSettings;
+	FilmbackSettings.SensorWidth = Camera.HorizontalAperture;
+	FilmbackSettings.SensorHeight = Camera.VerticalAperture;
+
+	UE_LOG(LogTemp, Log, TEXT("Camera settings: \n Focal Length: %f\n Focus Distance: %f\n Aperture: %f\n Sensor Width: %f\n Sensor Height: %f\n"), Camera.FocalLength, Camera.FocusDistance, Camera.FStop, Camera.HorizontalAperture, Camera.VerticalAperture);
+	
+	NewCameraActor->GetCineCameraComponent()->SetCurrentFocalLength(Camera.FocalLength);
+	NewCameraActor->GetCineCameraComponent()->SetFocusSettings(FocusSettings);
+	NewCameraActor->GetCineCameraComponent()->SetCurrentAperture(Camera.FStop);
+	NewCameraActor->GetCineCameraComponent()->SetFilmback(FilmbackSettings);
 
 	// CreateCameraLevelSequence(NewCameraActor, StageActor, Camera);
 	AddCameraToLevelSequence(LevelSequencePath, NewCameraActor, StageActor, Camera);
@@ -664,16 +679,22 @@ TArray<FCameraInfo> FUSDCameraFrameRangesModule::GetCamerasFromUSDStage(TObjectP
                 CameraInfo.EndFrame = 1;
             }
 
-			// CameraInfo.FocalLength = UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(StageActor, CameraInfo.CameraName, "focalLength");
-			// CameraInfo.FocusDistance = UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(StageActor, CameraInfo.CameraName, "focusDistance");
-			// CameraInfo.FStop = UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(StageActor, CameraInfo.CameraName, "fStop");
-			// CameraInfo.HorizontalAperture = UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(StageActor, CameraInfo.CameraName, "horizontalAperture");
-			// CameraInfo.VerticalAperture = UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(StageActor, CameraInfo.CameraName, "verticalAperture");
+			// CameraInfo.FocalLength = UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("focalLength")));
+			// CameraInfo.FocusDistance = UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("focusDistance")));
+			// CameraInfo.FStop = UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("fStop")));
+			// CameraInfo.HorizontalAperture = UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("horizontalAperture")));
+			// CameraInfo.VerticalAperture = UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("verticalAperture")));
+
+        	CameraInfo.FocalLength = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("focalLength")), 1.0);
+        	CameraInfo.FocusDistance = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("focusDistance")), 1.0);
+        	CameraInfo.FStop = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("fStop")), 1.0);
+        	CameraInfo.HorizontalAperture = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("horizontalAperture")), 1.0);
+        	CameraInfo.VerticalAperture = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("verticalAperture")), 1.0);
 
         	// implement template function in the header file!!!
         	// CameraInfo.FocalLength = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeValueInternal<float>(StageActor, CameraInfo.CameraName, "focalLength");
         	// CameraInfo.FocalLength = UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(StageActor, CameraInfo.CameraName, "focalLength");
-        	// UE::FUsdAttribute TestAttrib = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal(StageActor, "camera1", "xFormOp:translate");
+        	// UE::FUsdAttribute TestAttrib = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal(StageActor, FString(TEXT("camera1")), FString(TEXT("xFormOp:translate")));
 
         	Cameras.Add(CameraInfo);
         }
