@@ -81,70 +81,7 @@ UE::FUsdAttribute UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal
 	return Attr;
 }
 
-template <typename T>
-T UUsdAttributeFunctionLibraryBPLibrary::ExtractAttributeValue(UE::FVtValue& Value)
-{
-	pxr::VtValue& PxrValue = Value.GetUsdValue();
-	if (PxrValue.IsHolding<T>())
-	{
-		T AttrValue = PxrValue.Get<T>();
-		UE_LOG(LogTemp, Log, TEXT("Successfully retrieved attribute"));
-		return AttrValue;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Attribute is not holding a value of specified type"));
-	}
 
-	return T();
-}
-
-
-
-template <typename T>
-T UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeValueInternal(
-	AUsdStageActor* StageActor, FString PrimName, FString AttrName)
-{
-	UE::FUsdAttribute Attr = GetUsdAttributeInternal(StageActor, PrimName, AttrName);
-
-	UE::FVtValue Value;
-
-	bool bSuccess = Attr.Get(Value);
-
-	if (!bSuccess)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to get value for Attribute: %s"), *Attr.GetName().ToString());
-		return T();
-	}
-
-	return ExtractAttributeValue<T>(Value);
-}
-
-template <typename T>
-T UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedAttributeValueInternal(
-	AUsdStageActor* StageActor, FString PrimName, FString AttrName, double TimeSample)
-{
-	UE::FUsdAttribute Attr = GetUsdAttributeInternal(StageActor, PrimName, AttrName);
-
-	UE::FVtValue Value;
-
-	bool bSuccess = Attr.Get(Value, TimeSample);
-
-	if (!bSuccess)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to get animated value for Attribute: %s"), *Attr.GetName().ToString());
-		return T();
-	}
-
-	return ExtractAttributeValue<T>(Value);
-}
-
-template <typename T>
-FVector UUsdAttributeFunctionLibraryBPLibrary::ConvertUsdVectorToFVector(const pxr::VtValue& pxrValue)
-{
-	T pxrVec = pxrValue.Get<T>();
-	return FVector(static_cast<double>(pxrVec[0]), static_cast<double>(pxrVec[1]), static_cast<double>(pxrVec[2]));
-}
 
 
 FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdVec3Attribute(AUsdStageActor* StageActor, FString PrimName,
@@ -310,3 +247,5 @@ template double UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedAttributeVa
 template FVector UUsdAttributeFunctionLibraryBPLibrary::ConvertUsdVectorToFVector<pxr::GfVec3f>(const pxr::VtValue& pxrValue);
 template FVector UUsdAttributeFunctionLibraryBPLibrary::ConvertUsdVectorToFVector<pxr::GfVec3d>(const pxr::VtValue& pxrValue);
 template FVector UUsdAttributeFunctionLibraryBPLibrary::ConvertUsdVectorToFVector<pxr::GfVec3i>(const pxr::VtValue& pxrValue);
+
+
