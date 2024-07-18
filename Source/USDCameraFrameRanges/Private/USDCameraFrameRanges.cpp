@@ -45,7 +45,7 @@
 #include "Sections/MovieScene3DTransformSection.h"
 #include "UObject/SavePackage.h"
 
-#include "UsdAttributeFunctionLibraryBPLibrary.h"
+#include "UsdAttributeFunctionLibrary/Public/UsdAttributeFunctionLibraryBPLibrary.h"
 
 #include "CineCameraComponent.h"
 
@@ -671,8 +671,11 @@ TArray<FCameraInfo> FUSDCameraFrameRangesModule::GetCamerasFromUSDStage(TObjectP
 			// CameraInfo.VerticalAperture = UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(StageActor, CameraInfo.CameraName, "verticalAperture");
 
         	// implement template function in the header file!!!
-        	CameraInfo.FocalLength = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeValueInternal<float>(StageActor, CameraInfo.CameraName, "focalLength");
-            Cameras.Add(CameraInfo);
+        	// CameraInfo.FocalLength = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeValueInternal<float>(StageActor, CameraInfo.CameraName, "focalLength");
+        	// CameraInfo.FocalLength = UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(StageActor, CameraInfo.CameraName, "focalLength");
+        	// UE::FUsdAttribute TestAttrib = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal(StageActor, "camera1", "xFormOp:translate");
+
+        	Cameras.Add(CameraInfo);
         }
         else
         {

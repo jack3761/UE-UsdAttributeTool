@@ -24,62 +24,6 @@ UUsdAttributeFunctionLibraryBPLibrary::UUsdAttributeFunctionLibraryBPLibrary(con
 
 }
 
-UE::FUsdAttribute UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal(AUsdStageActor* StageActor,
-	FString PrimName, FString AttrName)
-{
-	if (!StageActor)
-	{
-		UE_LOG(LogTemp, Error, TEXT("StageActor is null"));
-		return UE::FUsdAttribute();
-	}
-	
-	UE::FUsdStage StageBase = StageActor->GetUsdStage();
-
-	if (!StageBase)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No Usd Stage found"));
-		return UE::FUsdAttribute();
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("Found stage"));
-
-
-	UE::FSdfPath PrimPath;
-	UE::FUsdPrim root = StageBase.GetPseudoRoot();
-
-	if (!root)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to get PseudoRoot"));
-		return UE::FUsdAttribute();
-	}
-	GetSdfPathWithName(root, PrimName, PrimPath);
-
-	if (PrimPath.IsEmpty())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PrimPath is empty for PrimName: %s"), *PrimName);
-		return UE::FUsdAttribute();
-	}
-
-
-	UE::FUsdPrim CurrentPrim = StageBase.GetPrimAtPath(PrimPath);
-
-	if (!CurrentPrim)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No Prim found at path: %s"), *PrimPath.GetString());
-		return UE::FUsdAttribute();
-	}
-	
-	const TCHAR* AttrNameTChar = *AttrName;
-	UE::FUsdAttribute Attr = CurrentPrim.GetAttribute(AttrNameTChar);
-
-	if (!Attr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No Attribute found with name: %s"), AttrNameTChar);
-		return UE::FUsdAttribute();
-	}
-
-	return Attr;
-}
 
 
 
@@ -87,7 +31,7 @@ UE::FUsdAttribute UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal
 FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdVec3Attribute(AUsdStageActor* StageActor, FString PrimName,
                                                                    FString AttrName)
 {
-	UE::FUsdAttribute Attr = GetUsdAttributeInternal(StageActor, PrimName, AttrName);
+	UE::FUsdAttribute Attr = FUsdAttributeFunctionLibraryModule::GetUsdAttributeInternal(StageActor, PrimName, AttrName);
 
 	UE::FVtValue Value;
 
@@ -105,15 +49,15 @@ FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdVec3Attribute(AUsdStageActo
 	if (PxrValueType.IsA<pxr::GfVec3f>()) {
 		UE_LOG(LogTemp, Warning, TEXT("Vec3f"));
 	
-		return ConvertUsdVectorToFVector<pxr::GfVec3f>(PxrValue);
+		return FUsdAttributeFunctionLibraryModule::ConvertUsdVectorToFVector<pxr::GfVec3f>(PxrValue);
 	} else if (PxrValueType.IsA<pxr::GfVec3d>()) {
 		UE_LOG(LogTemp, Warning, TEXT("Vec3d"));
 	
-		return ConvertUsdVectorToFVector<pxr::GfVec3d>(PxrValue);
+		return FUsdAttributeFunctionLibraryModule::ConvertUsdVectorToFVector<pxr::GfVec3d>(PxrValue);
 	} else if (PxrValueType.IsA<pxr::GfVec3i>()) {
 		UE_LOG(LogTemp, Warning, TEXT("Vec3i"));
 	
-		return ConvertUsdVectorToFVector<pxr::GfVec3i>(PxrValue);
+		return FUsdAttributeFunctionLibraryModule::ConvertUsdVectorToFVector<pxr::GfVec3i>(PxrValue);
 	} else {
 		UE_LOG(LogTemp, Warning, TEXT("Unsupported type for Attribute."));
 		return FVector();
@@ -124,26 +68,26 @@ FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdVec3Attribute(AUsdStageActo
 float UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(AUsdStageActor* StageActor, FString PrimName,
                                                                   FString AttrName)
 {
-	return GetUsdAttributeValueInternal<float>(StageActor, PrimName, AttrName);
+	return FUsdAttributeFunctionLibraryModule::GetUsdAttributeValueInternal<float>(StageActor, PrimName, AttrName);
 
 }
 
 
 double UUsdAttributeFunctionLibraryBPLibrary::GetUsdDoubleAttribute(AUsdStageActor* StageActor, FString PrimName, FString AttrName)
 {
-	return GetUsdAttributeValueInternal<double>(StageActor, PrimName, AttrName);
+	return FUsdAttributeFunctionLibraryModule::GetUsdAttributeValueInternal<double>(StageActor, PrimName, AttrName);
 }
 
 int UUsdAttributeFunctionLibraryBPLibrary::GetUsdIntAttribute(AUsdStageActor* StageActor, FString PrimName,
 	FString AttrName)
 {
-	return GetUsdAttributeValueInternal<int>(StageActor, PrimName, AttrName);
+	return FUsdAttributeFunctionLibraryModule::GetUsdAttributeValueInternal<int>(StageActor, PrimName, AttrName);
 }
 
 FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedVec3Attribute(AUsdStageActor* StageActor, FString PrimName,
 	FString AttrName, double TimeSample)
 {
-	UE::FUsdAttribute Attr = GetUsdAttributeInternal(StageActor, PrimName, AttrName);
+	UE::FUsdAttribute Attr = FUsdAttributeFunctionLibraryModule::GetUsdAttributeInternal(StageActor, PrimName, AttrName);
 
 	UE::FVtValue Value;
 
@@ -161,15 +105,15 @@ FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedVec3Attribute(AUsdS
 	if (PxrValueType.IsA<pxr::GfVec3f>()) {
 		UE_LOG(LogTemp, Warning, TEXT("Vec3f"));
 	
-		return ConvertUsdVectorToFVector<pxr::GfVec3f>(PxrValue);
+		return FUsdAttributeFunctionLibraryModule::ConvertUsdVectorToFVector<pxr::GfVec3f>(PxrValue);
 	} else if (PxrValueType.IsA<pxr::GfVec3d>()) {
 		UE_LOG(LogTemp, Warning, TEXT("Vec3d"));
 	
-		return ConvertUsdVectorToFVector<pxr::GfVec3d>(PxrValue);
+		return FUsdAttributeFunctionLibraryModule::ConvertUsdVectorToFVector<pxr::GfVec3d>(PxrValue);
 	} else if (PxrValueType.IsA<pxr::GfVec3i>()) {
 		UE_LOG(LogTemp, Warning, TEXT("Vec3i"));
 	
-		return ConvertUsdVectorToFVector<pxr::GfVec3i>(PxrValue);
+		return FUsdAttributeFunctionLibraryModule::ConvertUsdVectorToFVector<pxr::GfVec3i>(PxrValue);
 	} else {
 		UE_LOG(LogTemp, Warning, TEXT("Unsupported type for Attribute."));
 		return FVector();
@@ -179,19 +123,19 @@ FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedVec3Attribute(AUsdS
 float UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(AUsdStageActor* StageActor, FString PrimName,
                                                                           FString AttrName, double TimeSample)
 {
-	return GetUsdAnimatedAttributeValueInternal<float>(StageActor, PrimName, AttrName, TimeSample);
+	return FUsdAttributeFunctionLibraryModule::GetUsdAnimatedAttributeValueInternal<float>(StageActor, PrimName, AttrName, TimeSample);
 }
 
 double UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedDoubleAttribute(AUsdStageActor* StageActor,
 	FString PrimName, FString AttrName, double TimeSample)
 {
-	return GetUsdAnimatedAttributeValueInternal<double>(StageActor, PrimName, AttrName, TimeSample);
+	return FUsdAttributeFunctionLibraryModule::GetUsdAnimatedAttributeValueInternal<double>(StageActor, PrimName, AttrName, TimeSample);
 }
 
 int UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedIntAttribute(AUsdStageActor* StageActor, FString PrimName,
 	FString AttrName, double TimeSample)
 {
-	return GetUsdAnimatedAttributeValueInternal<int>(StageActor, PrimName, AttrName, TimeSample);
+	return FUsdAttributeFunctionLibraryModule::GetUsdAnimatedAttributeValueInternal<int>(StageActor, PrimName, AttrName, TimeSample);
 }
 
 FRotator UUsdAttributeFunctionLibraryBPLibrary::ConvertToUnrealRotator(FVector InputVector)
@@ -200,52 +144,6 @@ FRotator UUsdAttributeFunctionLibraryBPLibrary::ConvertToUnrealRotator(FVector I
 }
 
 
-void UUsdAttributeFunctionLibraryBPLibrary::GetSdfPathWithName(UE::FUsdPrim& CurrentPrim, FString TargetName,
-                                                               UE::FSdfPath& OutPath)
-{
-	if (!CurrentPrim)
-	{
-		UE_LOG(LogTemp, Error, TEXT("CurrentPrim is invalid"));
-		return;
-	}
 
-	UE_LOG(LogTemp, Log, TEXT("Searching in Prim: %s"), *CurrentPrim.GetName().ToString());
-
-	if (CurrentPrim.GetName().ToString().Equals(TargetName))
-	{
-		OutPath = CurrentPrim.GetPrimPath();
-		UE_LOG(LogTemp, Log, TEXT("Found Prim: %s with TargetName: %s"), *CurrentPrim.GetName().ToString(), *TargetName);
-		return;
-	}
-    
-	for (UE::FUsdPrim& Child : CurrentPrim.GetChildren())
-	{
-		if (!Child)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Encountered invalid child prim"));
-			continue;
-		}
-
-		GetSdfPathWithName(Child, TargetName, OutPath);
-
-		if (!OutPath.IsEmpty())
-		{
-			return;
-		}
-	}
-	UE_LOG(LogTemp, Log, TEXT("Finished searching children of Prim: %s"), *CurrentPrim.GetName().ToString());
-}
-
-template float UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeValueInternal<float>(AUsdStageActor* StageActor, FString PrimName, FString AttrName);
-template int UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeValueInternal<int>(AUsdStageActor* StageActor, FString PrimName, FString AttrName);
-template double UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeValueInternal<double>(AUsdStageActor* StageActor, FString PrimName, FString AttrName);
-
-template float UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedAttributeValueInternal<float>(AUsdStageActor* StageActor, FString PrimName, FString AttrName, double TimeSample);
-template int UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedAttributeValueInternal<int>(AUsdStageActor* StageActor, FString PrimName, FString AttrName, double TimeSample);
-template double UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedAttributeValueInternal<double>(AUsdStageActor* StageActor, FString PrimName, FString AttrName, double TimeSample);
-
-template FVector UUsdAttributeFunctionLibraryBPLibrary::ConvertUsdVectorToFVector<pxr::GfVec3f>(const pxr::VtValue& pxrValue);
-template FVector UUsdAttributeFunctionLibraryBPLibrary::ConvertUsdVectorToFVector<pxr::GfVec3d>(const pxr::VtValue& pxrValue);
-template FVector UUsdAttributeFunctionLibraryBPLibrary::ConvertUsdVectorToFVector<pxr::GfVec3i>(const pxr::VtValue& pxrValue);
 
 
