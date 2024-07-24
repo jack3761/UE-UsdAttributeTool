@@ -11,7 +11,6 @@ public class USDCameraFrameRanges : ModuleRules
 		PublicIncludePaths.AddRange(
 			new string[] {
 				// ... add public include paths required here ...
-				"UsdAttributeFunctionLibrary",
 			}
 			);
 				
@@ -19,7 +18,6 @@ public class USDCameraFrameRanges : ModuleRules
 		PrivateIncludePaths.AddRange(
 			new string[] {
 				// ... add other private include paths required here ...
-				"UsdAttributeFunctionLibrary",
 			}
 			);
 			
@@ -66,5 +64,10 @@ public class USDCameraFrameRanges : ModuleRules
 				// ... add any modules that your module loads dynamically here ...
 			}
 			);
+		
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[] { "UnrealEd" });
+		}
 	}
 }

@@ -9,7 +9,6 @@
 #include "USDStageActor.h"
 #include "UsdWrappers/UsdAttribute.h"
 #include "UsdWrappers/UsdPrim.h"
-#include "pxr/pxr.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/tf/type.h"
