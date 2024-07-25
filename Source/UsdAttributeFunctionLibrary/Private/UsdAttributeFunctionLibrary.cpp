@@ -2,20 +2,6 @@
 
 #include "UsdAttributeFunctionLibrary.h"
 
-#include "USDIncludesStart.h"
-
-#include "UsdWrappers/UsdStage.h"
-#include "USDStageActor.h"
-#include "UsdWrappers/UsdAttribute.h"
-#include "UsdWrappers/UsdPrim.h"
-#include "pxr/pxr.h"
-#include "pxr/base/vt/value.h"
-#include "pxr/base/vt/types.h"
-#include "pxr/base/tf/type.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/gf/vec3i.h"
-#include "USDIncludesEnd.h"
 
 #define LOCTEXT_NAMESPACE "FUsdAttributeFunctionLibraryModule"
 
@@ -31,7 +17,6 @@ void FUsdAttributeFunctionLibraryModule::ShutdownModule()
 	// we call this function before unloading the module.
 	
 }
-
 
 
 #undef LOCTEXT_NAMESPACE

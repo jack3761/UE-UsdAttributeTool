@@ -2,6 +2,7 @@
 
 #pragma once
 
+#if USE_USD_SDK
 #include "USDIncludesStart.h"
 #include <pxr/base/vt/value.h>
 #include "pxr/base/vt/types.h"
@@ -12,7 +13,7 @@
 #include "UsdWrappers/VtValue.h"
 #include "UsdWrappers/UsdAttribute.h"
 // #include "USDIncludesEnd.h"
-
+#endif
 
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "UsdAttributeFunctionLibraryBPLibrary.generated.h"
@@ -35,12 +36,15 @@
 *	For more info on custom blueprint nodes visit documentation:
 *	https://wiki.unrealengine.com/Custom_Blueprint_Node_Creation
 */
+#if USE_USD_SDK
 namespace UE
 {
 	class FUsdPrim;
 	class FSdfPath;
 	class FUsdAttribute;
+	
 }
+#endif
 
 class AUsdStageActor;
 
@@ -50,21 +54,22 @@ class USDATTRIBUTELIBRARY_API UUsdAttributeFunctionLibraryBPLibrary : public UBl
 	GENERATED_UCLASS_BODY()
 	
 public:
-	
+#if USE_USD_SDK
 	static UE::FUsdAttribute GetUsdAttributeInternal(AUsdStageActor* StageActor, FString PrimName, FString AttrName);
 	
-	// TODO implement all of these in the header instead of the cpp
 	template <typename T>
 	static T ExtractAttributeValue(UE::FVtValue& Value);
+	
+	template <typename T>
+	static FVector ConvertUsdVectorToFVector(const pxr::VtValue& pxrValue);
+
 	
 	template <typename T>
 	static T GetUsdAttributeValueInternal(AUsdStageActor* StageActor, FString PrimName, FString AttrName);
 
 	template <typename T>
 	static T GetUsdAnimatedAttributeValueInternal(AUsdStageActor* StageActor, FString PrimName, FString AttrName, double TimeSample);
-
-	template <typename T>
-	static FVector ConvertUsdVectorToFVector(const pxr::VtValue& pxrValue);
+#endif
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "UsdAttributes")
 	static FVector GetUsdVec3Attribute(AUsdStageActor* StageActor, FString PrimName, FString AttrName);
@@ -93,13 +98,16 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "USD Attributes")
 	static FRotator ConvertToUnrealRotator(FVector InputVector);
 
+#if USE_USD_SDK
 	static void GetSdfPathWithName(UE::FUsdPrim& CurrentPrim, FString TargetName, UE::FSdfPath& OutPath);
-
+#endif
 };
 
+#if USE_USD_SDK
 template <typename T>
 T UUsdAttributeFunctionLibraryBPLibrary::ExtractAttributeValue(UE::FVtValue& Value)
 {
+
 	pxr::VtValue& PxrValue = Value.GetUsdValue();
 	if (PxrValue.IsHolding<T>())
 	{
@@ -111,8 +119,8 @@ T UUsdAttributeFunctionLibraryBPLibrary::ExtractAttributeValue(UE::FVtValue& Val
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Attribute is not holding a value of specified type"));
 	}
-
 	return T();
+
 }
 
 
@@ -161,4 +169,5 @@ FVector UUsdAttributeFunctionLibraryBPLibrary::ConvertUsdVectorToFVector(const p
 	T pxrVec = pxrValue.Get<T>();
 	return FVector(static_cast<double>(pxrVec[0]), static_cast<double>(pxrVec[1]), static_cast<double>(pxrVec[2]));
 }
+#endif
 

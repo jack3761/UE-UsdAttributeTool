@@ -3,6 +3,7 @@
 #include "UsdAttributeFunctionLibraryBPLibrary.h"
 #include "UsdAttributeFunctionLibrary.h"
 
+#if USE_USD_SDK
 #include "USDIncludesStart.h"
 
 #include "UsdWrappers/UsdStage.h"
@@ -16,13 +17,14 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3i.h"
 #include "USDIncludesEnd.h"
+#endif
 
 UUsdAttributeFunctionLibraryBPLibrary::UUsdAttributeFunctionLibraryBPLibrary(const FObjectInitializer& ObjectInitializer)
 : Super(ObjectInitializer)
 {
 
 }
-
+#if USE_USD_SDK
 UE::FUsdAttribute UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal(AUsdStageActor* StageActor,
 	FString PrimName, FString AttrName)
 {
@@ -79,13 +81,14 @@ UE::FUsdAttribute UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal
 
 	return Attr;
 }
-
+#endif
 
 
 
 FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdVec3Attribute(AUsdStageActor* StageActor, FString PrimName,
                                                                    FString AttrName)
 {
+#if USE_USD_SDK
 	UE::FUsdAttribute Attr = GetUsdAttributeInternal(StageActor, PrimName, AttrName);
 
 	UE::FVtValue Value;
@@ -98,6 +101,7 @@ FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdVec3Attribute(AUsdStageActo
 		return FVector();
 	}
 
+	
 	pxr::VtValue& PxrValue = Value.GetUsdValue();
 	pxr::TfType PxrValueType = PxrValue.GetType();
 
@@ -117,31 +121,51 @@ FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdVec3Attribute(AUsdStageActo
 		UE_LOG(LogTemp, Warning, TEXT("Unsupported type for Attribute."));
 		return FVector();
 	}
+	
+#else
+	UE_LOG(LogTemp, Warning, TEXT("USE_USD_SDK not enabled, unable to access UsdValue"))
+	return FVector();
+#endif
+	
 }
 
 
 float UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(AUsdStageActor* StageActor, FString PrimName,
                                                                   FString AttrName)
 {
+#if USE_USD_SDK
 	return GetUsdAttributeValueInternal<float>(StageActor, PrimName, AttrName);
+#else
+	return 0.0;
+#endif
 
 }
 
 
 double UUsdAttributeFunctionLibraryBPLibrary::GetUsdDoubleAttribute(AUsdStageActor* StageActor, FString PrimName, FString AttrName)
 {
+#if USE_USD_SDK
 	return GetUsdAttributeValueInternal<double>(StageActor, PrimName, AttrName);
+#else
+	return 0.0;
+#endif
 }
 
 int UUsdAttributeFunctionLibraryBPLibrary::GetUsdIntAttribute(AUsdStageActor* StageActor, FString PrimName,
 	FString AttrName)
 {
+#if USE_USD_SDK
+
 	return GetUsdAttributeValueInternal<int>(StageActor, PrimName, AttrName);
+#else
+	return 0;
+#endif
 }
 
 FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedVec3Attribute(AUsdStageActor* StageActor, FString PrimName,
 	FString AttrName, double TimeSample)
 {
+#if USE_USD_SDK
 	UE::FUsdAttribute Attr = GetUsdAttributeInternal(StageActor, PrimName, AttrName);
 
 	UE::FVtValue Value;
@@ -173,24 +197,41 @@ FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedVec3Attribute(AUsdS
 		UE_LOG(LogTemp, Warning, TEXT("Unsupported type for Attribute."));
 		return FVector();
 	}
+#else
+	UE_LOG(LogTemp, Warning, TEXT("USE_USD_SDK not enabled, unable to access UsdValue"))
+	return FVector();
+#endif
 }
 
 float UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(AUsdStageActor* StageActor, FString PrimName,
                                                                           FString AttrName, double TimeSample)
 {
+#if USE_USD_SDK
 	return GetUsdAnimatedAttributeValueInternal<float>(StageActor, PrimName, AttrName, TimeSample);
+#else
+	return 0.0;
+#endif
 }
 
 double UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedDoubleAttribute(AUsdStageActor* StageActor,
 	FString PrimName, FString AttrName, double TimeSample)
 {
+#if USE_USD_SDK
+
 	return GetUsdAnimatedAttributeValueInternal<double>(StageActor, PrimName, AttrName, TimeSample);
+#else
+	return 0.0;
+#endif
 }
 
 int UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedIntAttribute(AUsdStageActor* StageActor, FString PrimName,
 	FString AttrName, double TimeSample)
 {
+#if USE_USD_SDK
 	return GetUsdAnimatedAttributeValueInternal<int>(StageActor, PrimName, AttrName, TimeSample);
+#else
+	return 0;
+#endif
 }
 
 FRotator UUsdAttributeFunctionLibraryBPLibrary::ConvertToUnrealRotator(FVector InputVector)
@@ -198,7 +239,7 @@ FRotator UUsdAttributeFunctionLibraryBPLibrary::ConvertToUnrealRotator(FVector I
 	return FRotator(InputVector[0], (InputVector[1]*-1)-90, InputVector[2]);
 }
 
-
+#if USE_USD_SDK
 void UUsdAttributeFunctionLibraryBPLibrary::GetSdfPathWithName(UE::FUsdPrim& CurrentPrim, FString TargetName,
                                                                UE::FSdfPath& OutPath)
 {
@@ -234,7 +275,9 @@ void UUsdAttributeFunctionLibraryBPLibrary::GetSdfPathWithName(UE::FUsdPrim& Cur
 	}
 	UE_LOG(LogTemp, Log, TEXT("Finished searching children of Prim: %s"), *CurrentPrim.GetName().ToString());
 }
+#endif
 
+#if USE_USD_SDK
 template float UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeValueInternal<float>(AUsdStageActor* StageActor, FString PrimName, FString AttrName);
 template int UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeValueInternal<int>(AUsdStageActor* StageActor, FString PrimName, FString AttrName);
 template double UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeValueInternal<double>(AUsdStageActor* StageActor, FString PrimName, FString AttrName);
@@ -246,5 +289,5 @@ template double UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedAttributeVa
 template FVector UUsdAttributeFunctionLibraryBPLibrary::ConvertUsdVectorToFVector<pxr::GfVec3f>(const pxr::VtValue& pxrValue);
 template FVector UUsdAttributeFunctionLibraryBPLibrary::ConvertUsdVectorToFVector<pxr::GfVec3d>(const pxr::VtValue& pxrValue);
 template FVector UUsdAttributeFunctionLibraryBPLibrary::ConvertUsdVectorToFVector<pxr::GfVec3i>(const pxr::VtValue& pxrValue);
-
+#endif
 
