@@ -40,13 +40,7 @@ namespace UE
 	class FUsdPrim;
 	class FSdfPath;
 	class FUsdAttribute;
-	class FVtValue;
 }
-//
-// namespace pxr
-// {
-// 	class VtValue;
-// }
 
 class AUsdStageActor;
 
