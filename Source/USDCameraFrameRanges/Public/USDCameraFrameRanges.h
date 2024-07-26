@@ -1,4 +1,4 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// FUSDCameraFrameRangesModule.h
 
 #pragma once
 
@@ -7,14 +7,13 @@
 #include "UsdWrappers/UsdAttribute.h" // Necessary include for FUsdAttribute
 #include "UsdWrappers/SdfPath.h" // Necessary include for FSdfPath
 
-
 class ACineCameraActor;
 
 namespace UE
 {
-	class FSdfPath;
-	class FUsdPrim;
-	class FUsdAttribute;
+    class FSdfPath;
+    class FUsdPrim;
+    class FUsdAttribute;
 }
 
 class FToolBarBuilder;
@@ -23,62 +22,61 @@ class AUsdStageActor;
 
 struct FCameraInfo
 {
-	FString CameraName;
-	UE::FSdfPath* PrimPath;
-	UE::FUsdAttribute Translation;
-	UE::FUsdAttribute Rotation;
-	TArray<double> RotTimeSamples;
-	TArray<double> TransTimeSamples;
-	int32 StartFrame;
-	int32 EndFrame;
-	float FocalLength;
-	float FocusDistance;
-	float FStop;
-	float HorizontalAperture;
-	float VerticalAperture;
+    FString CameraName;
+    UE::FSdfPath* PrimPath;
+    UE::FUsdAttribute Translation;
+    UE::FUsdAttribute Rotation;
+    TArray<double> RotTimeSamples;
+    TArray<double> TransTimeSamples;
+    int32 StartFrame;
+    int32 EndFrame;
+    float FocalLength;
+    float FocusDistance;
+    float FStop;
+    float HorizontalAperture;
+    float VerticalAperture;
 };
 
 struct FMaterialInfo
 {
-	FString ObjName;
-	FString MatName;
-	bool bMatchFound=false;
-	UE::FSdfPath PrimPath;
-		
+    FString ObjName;
+    FString MatName;
+    bool bMatchFound = false;
+    UE::FSdfPath PrimPath;
 };
 
 class FUSDCameraFrameRangesModule : public IModuleInterface
 {
 public:
-
-	/** IModuleInterface implementation */
-	virtual void StartupModule() override;
-	virtual void ShutdownModule() override;
-	
-	/** This function will be bound to Command (by default it will bring up plugin window) */
-	void PluginButtonClicked();
-	
+    /** IModuleInterface implementation */
+    virtual void StartupModule() override;
+    virtual void ShutdownModule() override;
+    
+    /** This function will be bound to Command (by default it will bring up plugin window) */
+    void PluginButtonClicked();
+    
 private:
+    void RegisterMenus();
 
-	void RegisterMenus();
+    // Property for the USD stage actor
+    TObjectPtr<AUsdStageActor> StageActor;
 
-	TObjectPtr<AUsdStageActor> GetUsdStageActor();
-	TArray<FCameraInfo> GetCamerasFromUSDStage(TObjectPtr<AUsdStageActor> USDStageActor);
-	// TArray<FCameraInfo> GetCamerasFromUSDStage();
-	
-	void TraverseAndCollectCameras(UE::FUsdPrim& CurrentPrim, TArray<UE::FSdfPath>& OutCameraPaths);
-	// void FUSDCameraFrameRangesModule::TraverseAndCollectCameras(const UE::FUsdPrim& CurrentPrim,
-	// TArray<UE::FSdfPath>& OutCameraPaths, TArray<AActor*>& CineCameraActors, TArray<ACineCameraActor*>& OutCameraActors);
-	void TraverseAndCollectMaterials(TObjectPtr<AUsdStageActor> StageActor, UE::FUsdPrim& CurrentPrim, TArray<FMaterialInfo>& MaterialNames);
+    TObjectPtr<AUsdStageActor> GetUsdStageActor();
 
-	TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& SpawnTabArgs);
-	FReply OnDuplicateButtonClicked(TObjectPtr<AUsdStageActor> StageActor, FCameraInfo Camera, FString LevelSequencePath);
-	FReply OnMaterialSwapButtonClicked(TObjectPtr<AUsdStageActor> StageActor);
-	FReply OnAttributeExportButtonClicked(TObjectPtr<AUsdStageActor> StageActor, FString InputPrim, FString InputAttr, FString LevelSequencePath);
-	TArray<UMaterial*>* GetAllMaterials();
+    TArray<FCameraInfo> GetCamerasFromUSDStage();
+    static void TraverseAndCollectCameras(const UE::FUsdPrim& CurrentPrim, TArray<UE::FSdfPath>& OutCameraPaths);
+    void TraverseAndCollectMaterials(const UE::FUsdPrim& CurrentPrim, TArray<FMaterialInfo>& MaterialNames);
 
-	void AddCameraToLevelSequence(FString LevelSequencePath, TObjectPtr<ACineCameraActor> CameraActor, TObjectPtr<AUsdStageActor> StageActor, FCameraInfo Camera);
+    TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& SpawnTabArgs);
+    FReply OnDuplicateButtonClicked(FCameraInfo Camera, FString LevelSequencePath);
+    FReply OnMaterialSwapButtonClicked();
+    FReply OnAttributeExportButtonClicked(FString InputPrim, FString InputAttr, FString LevelSequencePath);
+    FReply OnDisableManualFocusButtonClicked();
+    TArray<UMaterial*>* GetAllMaterials();
+
+    void AddCameraToLevelSequence(FString LevelSequencePath, TObjectPtr<ACineCameraActor> CameraActor, FCameraInfo Camera);
+    void DisableManualFocus(TObjectPtr<ACineCameraActor> CameraActor);
 
 private:
-	TSharedPtr<class FUICommandList> PluginCommands;
+    TSharedPtr<class FUICommandList> PluginCommands;
 };

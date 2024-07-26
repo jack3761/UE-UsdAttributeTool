@@ -12,7 +12,7 @@
 #include "pxr/base/gf/vec3i.h"
 #include "UsdWrappers/VtValue.h"
 #include "UsdWrappers/UsdAttribute.h"
-// #include "USDIncludesEnd.h"
+#include "USDIncludesEnd.h"
 #endif
 
 #include "Kismet/BlueprintFunctionLibrary.h"
