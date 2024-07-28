@@ -130,6 +130,12 @@ T UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeValueInternal(
 	AUsdStageActor* StageActor, FString PrimName, FString AttrName)
 {
 	UE::FUsdAttribute Attr = GetUsdAttributeInternal(StageActor, PrimName, AttrName);
+	
+	if (!Attr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Specified attribute is not holding any value"))
+		return T();
+	}
 
 	UE::FVtValue Value;
 
@@ -149,7 +155,13 @@ T UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedAttributeValueInternal(
 	AUsdStageActor* StageActor, FString PrimName, FString AttrName, double TimeSample)
 {
 	UE::FUsdAttribute Attr = GetUsdAttributeInternal(StageActor, PrimName, AttrName);
-
+	
+	if (!Attr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Specified attribute is not holding any value"))
+		return T();
+	}
+	
 	UE::FVtValue Value;
 
 	bool bSuccess = Attr.Get(Value, TimeSample);

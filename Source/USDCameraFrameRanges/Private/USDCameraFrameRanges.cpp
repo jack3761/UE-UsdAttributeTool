@@ -285,6 +285,45 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
 
 }
 
+TObjectPtr<AUsdStageActor> FUSDCameraFrameRangesModule::GetUsdStageActor()
+{
+	UE_LOG(LogTemp, Log, TEXT("Searching for UsdStageActor"));
+	
+	if (!GEditor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GEditor is not available"));
+		return nullptr;
+	}
+    
+	UWorld* World = GEditor->GetEditorWorldContext().World();
+
+	TArray<AActor*> StageActors;
+	UGameplayStatics::GetAllActorsOfClass(World, AUsdStageActor::StaticClass(), StageActors);
+
+	if (StageActors.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No AUsdStageActor found in the world"));
+		return nullptr;
+	}
+	else if (StageActors.Num() > 1)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Multiple UsdStageActor's detected, using first one found"));
+		return nullptr;
+	}
+		
+
+	// Will only work with one UsdStageActor, which is the aim for this project
+	TObjectPtr<AUsdStageActor> FoundStageActor = Cast<AUsdStageActor>(StageActors[0]);
+	if (!FoundStageActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("USDStageActor pointer is null"));
+		return nullptr;
+	}
+    
+	UE_LOG(LogTemp, Log, TEXT("USDStageActor assigned"));
+	return FoundStageActor;
+}
+
 
 FReply FUSDCameraFrameRangesModule::OnDuplicateButtonClicked(FCameraInfo Camera, FString LevelSequencePath)
 {
@@ -310,67 +349,88 @@ FReply FUSDCameraFrameRangesModule::OnDuplicateButtonClicked(FCameraInfo Camera,
 	
 	UE_LOG(LogTemp, Log, TEXT("Getting value"));
 
-	bool bSuccess = Camera.Translation.Get(Value, 0.0);
+	// bool bSuccess = Camera.Translation.Get(Value, 0.0);
+	FVector Translation = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedVec3Attribute(StageActor, Camera.CameraName, "xformOp:translate", 0.0);
 
 	UE_LOG(LogTemp, Log, TEXT("Value received"));
 
-	if (bSuccess)
+	if (Translation == FVector::ZeroVector)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Translation value found"));
-
-		pxr::VtValue& PxrValue = Value.GetUsdValue();
-		if (PxrValue.IsHolding<pxr::GfVec3d>())
-		{
-			pxr::GfVec3d Translation = PxrValue.Get<pxr::GfVec3d>();
-		
-			// Convert pxr::GfVec3d to FVector
-			FVector CameraLocation(Translation[0], Translation[2], Translation[1]);
-		
-			// Set the camera location in Unreal Engine
-			NewCameraActor->SetActorLocation(CameraLocation);
-
-			UE_LOG(LogTemp, Log, TEXT("Camera actor location set to %f %f %f"), Translation[0], Translation[1], Translation[2]);
-
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("The translation attribute value is not of type GfVec3d"));
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to get the translation attribute at time 0"));
+		UE_LOG(LogTemp, Warning, TEXT("Zero vector returned, check to see if value found correctly"))
 	}
 
-	bSuccess = Camera.Rotation.Get(Value, 0.0);
+	FVector CameraLocation(Translation[0], Translation[2], Translation[1]);
+	
+	NewCameraActor->SetActorLocation(CameraLocation);
 
-	if (bSuccess)
+	FVector Rotation = 	UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedVec3Attribute(StageActor, Camera.CameraName, "xformOp:rotateXYZ", 0.0);
+
+	if (Rotation == FVector::ZeroVector)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Rotation value found"));
-
-		pxr::VtValue& PxrValue = Value.GetUsdValue();
-		if (PxrValue.IsHolding<pxr::GfVec3f>())
-		{
-			pxr::GfVec3f Rotation = PxrValue.Get<pxr::GfVec3f>();
-		
-			// Convert pxr::GfVec3d to FVector
-			FRotator CameraRotation(Rotation[0], (Rotation[1]*-1)-90, Rotation[2]);
-		
-			// Set the camera location in Unreal Engine
-			NewCameraActor->SetActorRotation(CameraRotation);
-
-			UE_LOG(LogTemp, Log, TEXT("Camera actor rotation set to %f %f %f"), Rotation[0], (Rotation[1]*-1)-90, Rotation[2]);
-
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("The Rotation attribute value is not of type GfVec3d"));
-		}
+		UE_LOG(LogTemp, Warning, TEXT("Zero vector returned, check to see if value found correctly"))
 	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to get the Rotation attribute at time 0"));
-	}
+
+	FRotator CameraRotation = UUsdAttributeFunctionLibraryBPLibrary::ConvertToUnrealRotator(Rotation);
+
+	NewCameraActor->SetActorRotation(CameraRotation);
+
+	// if (bSuccess)
+	// {
+	// 	UE_LOG(LogTemp, Log, TEXT("Translation value found"));
+	//
+	// 	pxr::VtValue& PxrValue = Value.GetUsdValue();
+	// 	if (PxrValue.IsHolding<pxr::GfVec3d>())
+	// 	{
+	// 		pxr::GfVec3d Translation = PxrValue.Get<pxr::GfVec3d>();
+	// 	
+	// 		// Convert pxr::GfVec3d to FVector
+	// 		FVector CameraLocation(Translation[0], Translation[2], Translation[1]);
+	// 	
+	// 		// Set the camera location in Unreal Engine
+	// 		NewCameraActor->SetActorLocation(CameraLocation);
+	//
+	// 		UE_LOG(LogTemp, Log, TEXT("Camera actor location set to %f %f %f"), Translation[0], Translation[1], Translation[2]);
+	//
+	// 	}
+	// 	else
+	// 	{
+	// 		UE_LOG(LogTemp, Warning, TEXT("The translation attribute value is not of type GfVec3d"));
+	// 	}
+	// }
+	// else
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("Failed to get the translation attribute at time 0"));
+	// }
+	//
+	// bSuccess = Camera.Rotation.Get(Value, 0.0);
+	//
+	// if (bSuccess)
+	// {
+	// 	UE_LOG(LogTemp, Log, TEXT("Rotation value found"));
+	//
+	// 	pxr::VtValue& PxrValue = Value.GetUsdValue();
+	// 	if (PxrValue.IsHolding<pxr::GfVec3f>())
+	// 	{
+	// 		pxr::GfVec3f Rotation = PxrValue.Get<pxr::GfVec3f>();
+	// 	
+	// 		// Convert pxr::GfVec3d to FVector
+	// 		FRotator CameraRotation(Rotation[0], (Rotation[1]*-1)-90, Rotation[2]);
+	// 	
+	// 		// Set the camera location in Unreal Engine
+	// 		NewCameraActor->SetActorRotation(CameraRotation);
+	//
+	// 		UE_LOG(LogTemp, Log, TEXT("Camera actor rotation set to %f %f %f"), Rotation[0], (Rotation[1]*-1)-90, Rotation[2]);
+	//
+	// 	}
+	// 	else
+	// 	{
+	// 		UE_LOG(LogTemp, Warning, TEXT("The Rotation attribute value is not of type GfVec3d"));
+	// 	}
+	// }
+	// else
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("Failed to get the Rotation attribute at time 0"));
+	// }
 
 	FCameraFocusSettings FocusSettings;
 	FocusSettings.ManualFocusDistance = Camera.FocusDistance;
@@ -387,7 +447,14 @@ FReply FUSDCameraFrameRangesModule::OnDuplicateButtonClicked(FCameraInfo Camera,
 	NewCameraActor->GetCineCameraComponent()->SetFilmback(FilmbackSettings);
 
 	// CreateCameraLevelSequence(NewCameraActor, StageActor, Camera);
-	AddCameraToLevelSequence(LevelSequencePath, NewCameraActor, Camera);
+	if (!LevelSequencePath.IsEmpty())
+	{
+		AddCameraToLevelSequence(LevelSequencePath, NewCameraActor, Camera);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Level sequence path empty, static camera created"))
+	}
 
 	return FReply::Handled();
 }
@@ -398,7 +465,6 @@ FReply FUSDCameraFrameRangesModule::OnMaterialSwapButtonClicked()
 	UE::FUsdPrim root = Stage.GetPseudoRoot();
 	TArray<FMaterialInfo> MaterialNames;
 
-	// TArray<UMaterialInstance*>* Materials = GetMaterialInstances();
 	TArray<UMaterial*>* FoundMaterials = GetAllMaterials();
 	
 	TraverseAndCollectMaterials(root, MaterialNames);
@@ -436,7 +502,7 @@ FReply FUSDCameraFrameRangesModule::OnMaterialSwapButtonClicked()
 	return FReply::Handled();
 }
 
-FReply FUSDCameraFrameRangesModule::OnAttributeExportButtonClicked(FString InputPrim, FString InputAttr, FString LevelSequencePath)
+FReply FUSDCameraFrameRangesModule::OnAttributeExportButtonClicked(const FString& InputPrim, const FString& InputAttr, const FString& LevelSequencePath)
 {
 	
 	ULevelSequence* LevelSequence = Cast<ULevelSequence>(StaticLoadObject(ULevelSequence::StaticClass(), nullptr, *LevelSequencePath));
@@ -581,7 +647,6 @@ void FUSDCameraFrameRangesModule::AddCameraToLevelSequence(FString LevelSequence
 				TranslateX->AddConstantKey(FrameNumber, Translation[0]);
 				TranslateY->AddConstantKey(FrameNumber, Translation[2]);
 				TranslateZ->AddConstantKey(FrameNumber, Translation[1]);
-				// UE_LOG(LogTemp, Log, TEXT("Added translation key at time %d: (%f, %f, %f)"), KeyInt, Translation[0], Translation[2], Translation[1]);
 			}
 			else
 			{
@@ -604,13 +669,9 @@ void FUSDCameraFrameRangesModule::AddCameraToLevelSequence(FString LevelSequence
 			if (PxrValue.IsHolding<pxr::GfVec3f>())
 			{
 				pxr::GfVec3f Rotation = PxrValue.Get<pxr::GfVec3f>();
-				// RotateX->AddConstantKey(FrameNumber, Rotation[0]);
-				// RotateY->AddConstantKey(FrameNumber, (Rotation[1] * -1) - 90);
-				// RotateZ->AddConstantKey(FrameNumber, Rotation[2]);
 				RotateX->AddConstantKey(FrameNumber, Rotation[2]);
 				RotateY->AddConstantKey(FrameNumber, Rotation[0]);
 				RotateZ->AddConstantKey(FrameNumber, (Rotation[1] * -1) - 90);
-				// UE_LOG(LogTemp, Log, TEXT("Added rotation key at time %d: (%f, %f, %f)"), KeyInt, Rotation[0], (Rotation[1] * -1) - 90, Rotation[2]);
 			}
 			else
 			{
@@ -666,44 +727,7 @@ void FUSDCameraFrameRangesModule::RegisterMenus()
 	}
 }
 
-TObjectPtr<AUsdStageActor> FUSDCameraFrameRangesModule::GetUsdStageActor()
-{
-	UE_LOG(LogTemp, Log, TEXT("Searching for UsdStageActor"));
-	
-	if (!GEditor)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GEditor is not available"));
-		return nullptr;
-	}
-    
-	UWorld* World = GEditor->GetEditorWorldContext().World();
 
-	TArray<AActor*> StageActors;
-	UGameplayStatics::GetAllActorsOfClass(World, AUsdStageActor::StaticClass(), StageActors);
-
-	if (StageActors.Num() == 0)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No AUsdStageActor found in the world"));
-		return nullptr;
-	}
-	else if (StageActors.Num() > 1)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Multiple UsdStageActor's detected, using first one found"));
-		return nullptr;
-	}
-		
-
-	// Will only work with one UsdStageActor, which is the aim for this project
-	TObjectPtr<AUsdStageActor> FoundStageActor = Cast<AUsdStageActor>(StageActors[0]);
-	if (!FoundStageActor)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("USDStageActor pointer is null"));
-		return nullptr;
-	}
-    
-	UE_LOG(LogTemp, Log, TEXT("USDStageActor assigned"));
-	return FoundStageActor;
-}
 
 
 TArray<FCameraInfo> FUSDCameraFrameRangesModule::GetCamerasFromUSDStage()

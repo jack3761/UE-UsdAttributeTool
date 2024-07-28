@@ -61,7 +61,7 @@ private:
     // Property for the USD stage actor
     TObjectPtr<AUsdStageActor> StageActor;
 
-    TObjectPtr<AUsdStageActor> GetUsdStageActor();
+    static TObjectPtr<AUsdStageActor> GetUsdStageActor();
 
     TArray<FCameraInfo> GetCamerasFromUSDStage();
     static void TraverseAndCollectCameras(const UE::FUsdPrim& CurrentPrim, TArray<UE::FSdfPath>& OutCameraPaths);
@@ -70,12 +70,12 @@ private:
     TSharedRef<class SDockTab> OnSpawnPluginTab(const class FSpawnTabArgs& SpawnTabArgs);
     FReply OnDuplicateButtonClicked(FCameraInfo Camera, FString LevelSequencePath);
     FReply OnMaterialSwapButtonClicked();
-    FReply OnAttributeExportButtonClicked(FString InputPrim, FString InputAttr, FString LevelSequencePath);
+    FReply OnAttributeExportButtonClicked(const FString& InputPrim, const FString& InputAttr, const FString& LevelSequencePath);
     FReply OnDisableManualFocusButtonClicked();
     TArray<UMaterial*>* GetAllMaterials();
 
     void AddCameraToLevelSequence(FString LevelSequencePath, TObjectPtr<ACineCameraActor> CameraActor, FCameraInfo Camera);
-    void DisableManualFocus(TObjectPtr<ACineCameraActor> CameraActor);
+    static void DisableManualFocus(TObjectPtr<ACineCameraActor> CameraActor);
 
 private:
     TSharedPtr<class FUICommandList> PluginCommands;

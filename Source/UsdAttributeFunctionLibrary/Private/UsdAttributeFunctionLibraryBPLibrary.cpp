@@ -53,6 +53,7 @@ UE::FUsdAttribute UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal
 		UE_LOG(LogTemp, Warning, TEXT("Failed to get PseudoRoot"));
 		return UE::FUsdAttribute();
 	}
+	
 	GetSdfPathWithName(root, PrimName, PrimPath);
 
 	if (PrimPath.IsEmpty())
@@ -207,7 +208,12 @@ float UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(AUsdSt
                                                                           FString AttrName, double TimeSample)
 {
 #if USE_USD_SDK
-	return GetUsdAnimatedAttributeValueInternal<float>(StageActor, PrimName, AttrName, TimeSample);
+	if (float FoundValue = GetUsdAnimatedAttributeValueInternal<float>(StageActor, PrimName, AttrName, TimeSample))
+	{
+		return FoundValue;
+	}
+	return 0.0;
+	
 #else
 	return 0.0;
 #endif
@@ -217,8 +223,11 @@ double UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedDoubleAttribute(AUsd
 	FString PrimName, FString AttrName, double TimeSample)
 {
 #if USE_USD_SDK
-
-	return GetUsdAnimatedAttributeValueInternal<double>(StageActor, PrimName, AttrName, TimeSample);
+	if (double FoundValue = GetUsdAnimatedAttributeValueInternal<double>(StageActor, PrimName, AttrName, TimeSample))
+	{
+		return FoundValue;
+	}
+	return 0.0;
 #else
 	return 0.0;
 #endif
@@ -228,7 +237,11 @@ int UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedIntAttribute(AUsdStageA
 	FString AttrName, double TimeSample)
 {
 #if USE_USD_SDK
-	return GetUsdAnimatedAttributeValueInternal<int>(StageActor, PrimName, AttrName, TimeSample);
+	if (int FoundValue = GetUsdAnimatedAttributeValueInternal<int>(StageActor, PrimName, AttrName, TimeSample))
+	{
+		return FoundValue;
+	}
+	return 0;
 #else
 	return 0;
 #endif
