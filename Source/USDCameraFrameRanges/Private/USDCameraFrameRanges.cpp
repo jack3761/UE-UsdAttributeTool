@@ -98,10 +98,36 @@ void FUSDCameraFrameRangesModule::ShutdownModule()
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(USDCameraFrameRangesTabName);
 }
 
+void FUSDCameraFrameRangesModule::RegisterMenus()
+{
+	// Owner will be used for cleanup in call to UToolMenus::UnregisterOwner
+	FToolMenuOwnerScoped OwnerScoped(this);
+
+	{
+		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
+		{
+			FToolMenuSection& Section = Menu->FindOrAddSection("WindowLayout");
+			Section.AddMenuEntryWithCommandList(FUSDCameraFrameRangesCommands::Get().OpenPluginWindow, PluginCommands);
+		}
+	}
+
+	{
+		UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar");
+		{
+			FToolMenuSection& Section = ToolbarMenu->FindOrAddSection("Settings");
+			{
+				FToolMenuEntry& Entry = Section.AddEntry(FToolMenuEntry::InitToolBarButton(FUSDCameraFrameRangesCommands::Get().OpenPluginWindow));
+				Entry.SetCommandList(PluginCommands);
+			}
+		}
+	}
+}
+
+
 
 TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnTabArgs& SpawnTabArgs)
 {
-	StageActor = GetUsdStageActor();
+	StageActor = FindUsdStageActor();
     if (!StageActor)
     {
         // Handle case when StageActor is not found
@@ -285,7 +311,7 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
 
 }
 
-TObjectPtr<AUsdStageActor> FUSDCameraFrameRangesModule::GetUsdStageActor()
+TObjectPtr<AUsdStageActor> FUSDCameraFrameRangesModule::FindUsdStageActor()
 {
 	UE_LOG(LogTemp, Log, TEXT("Searching for UsdStageActor"));
 	
@@ -323,7 +349,6 @@ TObjectPtr<AUsdStageActor> FUSDCameraFrameRangesModule::GetUsdStageActor()
 	UE_LOG(LogTemp, Log, TEXT("USDStageActor assigned"));
 	return FoundStageActor;
 }
-
 
 FReply FUSDCameraFrameRangesModule::OnDuplicateButtonClicked(FCameraInfo Camera, FString LevelSequencePath)
 {
@@ -373,64 +398,6 @@ FReply FUSDCameraFrameRangesModule::OnDuplicateButtonClicked(FCameraInfo Camera,
 	FRotator CameraRotation = UUsdAttributeFunctionLibraryBPLibrary::ConvertToUnrealRotator(Rotation);
 
 	NewCameraActor->SetActorRotation(CameraRotation);
-
-	// if (bSuccess)
-	// {
-	// 	UE_LOG(LogTemp, Log, TEXT("Translation value found"));
-	//
-	// 	pxr::VtValue& PxrValue = Value.GetUsdValue();
-	// 	if (PxrValue.IsHolding<pxr::GfVec3d>())
-	// 	{
-	// 		pxr::GfVec3d Translation = PxrValue.Get<pxr::GfVec3d>();
-	// 	
-	// 		// Convert pxr::GfVec3d to FVector
-	// 		FVector CameraLocation(Translation[0], Translation[2], Translation[1]);
-	// 	
-	// 		// Set the camera location in Unreal Engine
-	// 		NewCameraActor->SetActorLocation(CameraLocation);
-	//
-	// 		UE_LOG(LogTemp, Log, TEXT("Camera actor location set to %f %f %f"), Translation[0], Translation[1], Translation[2]);
-	//
-	// 	}
-	// 	else
-	// 	{
-	// 		UE_LOG(LogTemp, Warning, TEXT("The translation attribute value is not of type GfVec3d"));
-	// 	}
-	// }
-	// else
-	// {
-	// 	UE_LOG(LogTemp, Warning, TEXT("Failed to get the translation attribute at time 0"));
-	// }
-	//
-	// bSuccess = Camera.Rotation.Get(Value, 0.0);
-	//
-	// if (bSuccess)
-	// {
-	// 	UE_LOG(LogTemp, Log, TEXT("Rotation value found"));
-	//
-	// 	pxr::VtValue& PxrValue = Value.GetUsdValue();
-	// 	if (PxrValue.IsHolding<pxr::GfVec3f>())
-	// 	{
-	// 		pxr::GfVec3f Rotation = PxrValue.Get<pxr::GfVec3f>();
-	// 	
-	// 		// Convert pxr::GfVec3d to FVector
-	// 		FRotator CameraRotation(Rotation[0], (Rotation[1]*-1)-90, Rotation[2]);
-	// 	
-	// 		// Set the camera location in Unreal Engine
-	// 		NewCameraActor->SetActorRotation(CameraRotation);
-	//
-	// 		UE_LOG(LogTemp, Log, TEXT("Camera actor rotation set to %f %f %f"), Rotation[0], (Rotation[1]*-1)-90, Rotation[2]);
-	//
-	// 	}
-	// 	else
-	// 	{
-	// 		UE_LOG(LogTemp, Warning, TEXT("The Rotation attribute value is not of type GfVec3d"));
-	// 	}
-	// }
-	// else
-	// {
-	// 	UE_LOG(LogTemp, Warning, TEXT("Failed to get the Rotation attribute at time 0"));
-	// }
 
 	FCameraFocusSettings FocusSettings;
 	FocusSettings.ManualFocusDistance = Camera.FocusDistance;
@@ -595,7 +562,6 @@ TArray<UMaterial*>* FUSDCameraFrameRangesModule::GetAllMaterials()
 	return Assets;
 }
 
-
 void FUSDCameraFrameRangesModule::AddCameraToLevelSequence(FString LevelSequencePath,
 	TObjectPtr<ACineCameraActor> CameraActor, FCameraInfo Camera)
 {
@@ -701,33 +667,6 @@ void FUSDCameraFrameRangesModule::PluginButtonClicked()
 {
 	FGlobalTabmanager::Get()->TryInvokeTab(USDCameraFrameRangesTabName);	
 }
-
-void FUSDCameraFrameRangesModule::RegisterMenus()
-{
-	// Owner will be used for cleanup in call to UToolMenus::UnregisterOwner
-	FToolMenuOwnerScoped OwnerScoped(this);
-
-	{
-		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
-		{
-			FToolMenuSection& Section = Menu->FindOrAddSection("WindowLayout");
-			Section.AddMenuEntryWithCommandList(FUSDCameraFrameRangesCommands::Get().OpenPluginWindow, PluginCommands);
-		}
-	}
-
-	{
-		UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar");
-		{
-			FToolMenuSection& Section = ToolbarMenu->FindOrAddSection("Settings");
-			{
-				FToolMenuEntry& Entry = Section.AddEntry(FToolMenuEntry::InitToolBarButton(FUSDCameraFrameRangesCommands::Get().OpenPluginWindow));
-				Entry.SetCommandList(PluginCommands);
-			}
-		}
-	}
-}
-
-
 
 
 TArray<FCameraInfo> FUSDCameraFrameRangesModule::GetCamerasFromUSDStage()

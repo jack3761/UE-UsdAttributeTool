@@ -22,14 +22,6 @@
 	],
 	"Modules": [
 		{
-			"Name": "UsdAttributeTools",
-			"Type": "Runtime",
-			"LoadingPhase": "Default",
-			"WhitelistPlatforms": [
-				"Win64"
-			]
-		},
-		{
 			"Name": "UsdAttributeFunctionLibrary",
 			"Type": "Runtime",
 			"LoadingPhase": "PreLoadingScreen",
