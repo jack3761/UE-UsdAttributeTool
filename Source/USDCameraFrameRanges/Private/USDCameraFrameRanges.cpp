@@ -130,7 +130,6 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
 	StageActor = FindUsdStageActor();
     if (!StageActor)
     {
-        // Handle case when StageActor is not found
         return SNew(SDockTab)
             .TabRole(ETabRole::NomadTab)
             [
@@ -144,10 +143,8 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
     }
 
     TArray<FCameraInfo> Cameras = GetCamerasFromUSDStage();
-
     if (Cameras.Num() == 0)
     {
-        // Handle case when no cameras are found
         return SNew(SDockTab)
             .TabRole(ETabRole::NomadTab)
             [
@@ -161,11 +158,77 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
     }
 
     TSharedPtr<SEditableTextBox> SequenceInputTextBox = SNew(SEditableTextBox);
-	TSharedPtr<SEditableTextBox> PrimInputTextBox = SNew(SEditableTextBox);
-	TSharedPtr<SEditableTextBox> AttrInputTextBox = SNew(SEditableTextBox);
+    TSharedPtr<SEditableTextBox> PrimInputTextBox = SNew(SEditableTextBox);
+    TSharedPtr<SEditableTextBox> AttrInputTextBox = SNew(SEditableTextBox);
 
+	TSharedPtr<SVerticalBox> LevelSequenceButtons = SNew(SVerticalBox);
     TSharedPtr<SVerticalBox> CameraList = SNew(SVerticalBox);
+	
+    // Input Fields with Labels
+    LevelSequenceButtons->AddSlot()
+    .Padding(10)
+    [
+        SNew(SHorizontalBox)
+        + SHorizontalBox::Slot()
+        .AutoWidth()
+        .Padding(5)
+        [
+            SNew(STextBlock)
+            .Text(FText::FromString(TEXT("Level sequence path:")))
+        ]
+        + SHorizontalBox::Slot()
+        .FillWidth(1.0)
+        .Padding(5)
+        [
+            SequenceInputTextBox.ToSharedRef()
+        ]
+    ];
 
+    // Prim path and Attribute name on the same row
+    LevelSequenceButtons->AddSlot()
+    .Padding(10)
+    [
+        SNew(SHorizontalBox)
+        + SHorizontalBox::Slot()
+        .AutoWidth()
+        .Padding(5)
+        [
+            SNew(STextBlock)
+            .Text(FText::FromString(TEXT("Prim name:")))
+        ]
+        + SHorizontalBox::Slot()
+        .FillWidth(1.0)
+        .Padding(5)
+        [
+            PrimInputTextBox.ToSharedRef()
+        ]
+        + SHorizontalBox::Slot()
+        .AutoWidth()
+        .Padding(5)
+        [
+            SNew(STextBlock)
+            .Text(FText::FromString(TEXT("Attribute name:")))
+        ]
+        + SHorizontalBox::Slot()
+        .FillWidth(1.0)
+        .Padding(5)
+        [
+            AttrInputTextBox.ToSharedRef()
+        ]
+        + SHorizontalBox::Slot()
+        .AutoWidth()
+        .Padding(5)
+        [
+            SNew(SButton)
+            .Text(FText::FromString(TEXT("Export to sequence")))
+            .OnClicked_Lambda([this, PrimInputTextBox, AttrInputTextBox, SequenceInputTextBox]()
+            {
+                return OnAttributeExportButtonClicked(PrimInputTextBox->GetText().ToString(), AttrInputTextBox->GetText().ToString(), SequenceInputTextBox->GetText().ToString());
+            })
+        ]
+    ];
+	
+	// Camera List Header
     CameraList->AddSlot()
     .Padding(2)
     [
@@ -190,124 +253,94 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
         ]
     ];
 
-	CameraList->AddSlot()
-	.Padding(10)
-	[
-		SNew(SHorizontalBox)
-		+SHorizontalBox::Slot()
-		.AutoWidth()
-		[
-			SNew(STextBlock)
-			.Text(FText::FromString(TEXT("Level sequence path:")))
-		]
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		[
-			SequenceInputTextBox.ToSharedRef()
-		]
-	];
-
-	CameraList->AddSlot()
-	.Padding(10)
-	[
-		SNew(SVerticalBox)
-		+SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(20)
-		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			[
-				PrimInputTextBox.ToSharedRef()
-			]
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			[
-				AttrInputTextBox.ToSharedRef()
-			]
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			[
-				SNew(SButton)
-				.Text(FText::FromString(TEXT("Export to sequence")))
-				.OnClicked_Lambda([this, PrimInputTextBox, AttrInputTextBox, SequenceInputTextBox]()
-				{
-					return OnAttributeExportButtonClicked(PrimInputTextBox->GetText().ToString(), AttrInputTextBox->GetText().ToString(), SequenceInputTextBox->GetText().ToString());
-				})
-			]
-		]
-	];
-
-
     // Loop through Cameras array and create a row widget for each camera
     for (const FCameraInfo& Camera : Cameras)
     {
         CameraList->AddSlot()
         .Padding(2)
         [
-            SNew(SHorizontalBox)
-            + SHorizontalBox::Slot()
-            .FillWidth(0.4)
-            [
-                SNew(STextBlock)
-                .Text(FText::FromString(Camera.CameraName))
-            ]
-            + SHorizontalBox::Slot()
-            .FillWidth(0.4)
-            [
-                SNew(STextBlock)
-                .Text(FText::FromString(FString::Printf(TEXT("%d - %d"), Camera.StartFrame, Camera.EndFrame)))
-            ]
-            + SHorizontalBox::Slot()
-            .AutoWidth()
-            [
-                SNew(SButton)
-                .Text(FText::FromString(TEXT("Duplicate")))
-            	.OnClicked_Lambda([this, Camera, SequenceInputTextBox]()
-            	{
-            		return OnDuplicateButtonClicked(Camera, SequenceInputTextBox->GetText().ToString());
-            	})
-            ]
+	        SNew(SVerticalBox)
+	        + SVerticalBox::Slot()
+	        .AutoHeight()
+	        [
+	            SNew(SHorizontalBox)
+	            + SHorizontalBox::Slot()
+	            .FillWidth(0.4)
+	            [
+	                SNew(STextBlock)
+	                .Text(FText::FromString(Camera.CameraName))
+	            ]
+	            + SHorizontalBox::Slot()
+	            .FillWidth(0.4)
+	            [
+	                SNew(STextBlock)
+	                .Text(FText::FromString(FString::Printf(TEXT("%d - %d"), Camera.StartFrame, Camera.EndFrame)))
+	            ]
+	            + SHorizontalBox::Slot()
+	            .AutoWidth()
+	            [
+	                SNew(SButton)
+	                .Text(FText::FromString(TEXT("Duplicate")))
+	                .OnClicked_Lambda([this, Camera, SequenceInputTextBox]()
+	                {
+	                    return OnDuplicateButtonClicked(Camera, SequenceInputTextBox->GetText().ToString());
+	                })
+	            ]
+		    ]
         ];
     }
 
-	return SNew(SDockTab)
-	.TabRole(ETabRole::NomadTab)
-	[
-		// Main content of the tab
-		SNew(SVerticalBox) 
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(20)
-		[
-			SNew(SScrollBox)
-			+ SScrollBox::Slot()
-			[
-				SNew(SBorder)
-				.Padding(FMargin(20))
+    return SNew(SDockTab)
+        .TabRole(ETabRole::NomadTab)
+        [
+            SNew(SScrollBox)
+	        + SScrollBox::Slot()
+	        [
+		        SNew(SVerticalBox)
+        		+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(20)
 				[
-					CameraList.ToSharedRef()
+					LevelSequenceButtons.ToSharedRef()
 				]
-			]
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(20)
-		[
-			SNew(SButton)
-			.Text(FText::FromString(TEXT("Material swap")))
-			.OnClicked(FOnClicked::CreateRaw(this, &FUSDCameraFrameRangesModule::OnMaterialSwapButtonClicked))
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(20)
-		[
-			SNew(SButton)
-			.Text(FText::FromString(TEXT("Disable Manual Focus")))
-			.OnClicked(FOnClicked::CreateRaw(this, &FUSDCameraFrameRangesModule::OnDisableManualFocusButtonClicked))
-		]
-	];
+	            + SVerticalBox::Slot()
+	            .AutoHeight()
+	            .Padding(20)
+	            [
+	                SNew(SScrollBox)
+	                + SScrollBox::Slot()
+	                [
+	                    SNew(SBorder)
+	                    .Padding(FMargin(20))
+	                    [
+	                        CameraList.ToSharedRef()
+	                    ]
+	                ]
+	            ]
+	            + SVerticalBox::Slot()
+	            .AutoHeight()
+	            .Padding(10)
+	            [
+	                SNew(SHorizontalBox)
+	                + SHorizontalBox::Slot()
+	                .AutoWidth()
+	                .Padding(10)
+	                [
+	                    SNew(SButton)
+	                    .Text(FText::FromString(TEXT("Material swap")))
+	                    .OnClicked(FOnClicked::CreateRaw(this, &FUSDCameraFrameRangesModule::OnMaterialSwapButtonClicked))
+	                ]
+	                + SHorizontalBox::Slot()
+	                .AutoWidth()
+	                .Padding(10)
+	                [
+	                    SNew(SButton)
+	                    .Text(FText::FromString(TEXT("Disable Manual Focus")))
+	                    .OnClicked(FOnClicked::CreateRaw(this, &FUSDCameraFrameRangesModule::OnDisableManualFocusButtonClicked))
+	                ]
+	            ]
+		    ]
+        ];
 
 }
 
@@ -471,13 +504,18 @@ FReply FUSDCameraFrameRangesModule::OnMaterialSwapButtonClicked()
 
 FReply FUSDCameraFrameRangesModule::OnAttributeExportButtonClicked(const FString& InputPrim, const FString& InputAttr, const FString& LevelSequencePath)
 {
+	if (InputPrim.IsEmpty() || InputAttr.IsEmpty() || LevelSequencePath.IsEmpty())
+	{
+		UE_LOG(LogTemp, Error, TEXT("One of the inputs is empty, please use valid input"))
+		return FReply::Unhandled();
+	}
 	
 	ULevelSequence* LevelSequence = Cast<ULevelSequence>(StaticLoadObject(ULevelSequence::StaticClass(), nullptr, *LevelSequencePath));
 
 	if (LevelSequence == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("No level sequence found at path %s"), *LevelSequencePath);
-		FReply::Unhandled();
+		return FReply::Unhandled();
 	}
 	
 	UMovieSceneFloatTrack* FloatTrack = LevelSequence->MovieScene->AddTrack<UMovieSceneFloatTrack>();
@@ -487,9 +525,14 @@ FReply FUSDCameraFrameRangesModule::OnAttributeExportButtonClicked(const FString
 
 	UE::FUsdAttribute TargetAttr = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal(StageActor, InputPrim, InputAttr);
 
+	if (!TargetAttr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Valid attribute not found"));
+		FReply::Unhandled();
+	}
+
 	TArray<double> TimeSamples;
 	TargetAttr.GetTimeSamples(TimeSamples);
-
 
 	if (TimeSamples.Num() > 1)
 	{

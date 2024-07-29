@@ -54,6 +54,11 @@ public:
     
     /** This function will be bound to Command (by default it will bring up plugin window) */
     void PluginButtonClicked();
+
+    FReply OnDuplicateButtonClicked(FCameraInfo Camera, FString LevelSequencePath);
+    FReply OnMaterialSwapButtonClicked();
+    FReply OnAttributeExportButtonClicked(const FString& InputPrim, const FString& InputAttr, const FString& LevelSequencePath);
+    FReply OnDisableManualFocusButtonClicked();
     
 private:
     void RegisterMenus();
@@ -71,10 +76,7 @@ private:
     void TraverseAndCollectMaterials(const UE::FUsdPrim& CurrentPrim, TArray<FMaterialInfo>& MaterialNames);
 
     
-    FReply OnDuplicateButtonClicked(FCameraInfo Camera, FString LevelSequencePath);
-    FReply OnMaterialSwapButtonClicked();
-    FReply OnAttributeExportButtonClicked(const FString& InputPrim, const FString& InputAttr, const FString& LevelSequencePath);
-    FReply OnDisableManualFocusButtonClicked();
+    
     
     TArray<UMaterial*>* GetAllMaterials();
 
