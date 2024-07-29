@@ -91,7 +91,13 @@ FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdVec3Attribute(AUsdStageActo
 {
 #if USE_USD_SDK
 	UE::FUsdAttribute Attr = GetUsdAttributeInternal(StageActor, PrimName, AttrName);
-
+	
+	if (!Attr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Specified attribute is not holding any value"))
+		return FVector();
+	}
+	
 	UE::FVtValue Value;
 
 	bool bSuccess = Attr.Get(Value);
@@ -168,6 +174,12 @@ FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedVec3Attribute(AUsdS
 {
 #if USE_USD_SDK
 	UE::FUsdAttribute Attr = GetUsdAttributeInternal(StageActor, PrimName, AttrName);
+
+	if (!Attr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Specified attribute is not holding any value"))
+		return FVector();
+	}
 
 	UE::FVtValue Value;
 
