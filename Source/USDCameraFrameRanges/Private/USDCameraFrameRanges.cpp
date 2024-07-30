@@ -4,7 +4,6 @@
 
 #include "USDCameraFrameRangesStyle.h"
 #include "USDCameraFrameRangesCommands.h"
-#include "LevelEditor.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Text/STextBlock.h"
@@ -13,15 +12,9 @@
 #include "CineCameraActor.h"
 #include "Kismet/GameplayStatics.h"
 #include "Editor.h"
-#include "EditorLevelUtils.h"
 
 #include "LevelSequence.h"
 #include "MovieScene.h"
-// #include "MovieSceneFloatChannel.h"
-// #include "MovieScene3DTransformTrack.h"
-// #include "MovieScene3DTransformSection.h"
-#include "FileHelpers.h"
-#include "LevelSequenceActor.h"
 #include "LevelSequencePlayer.h"
 
 #include "USDIncludesStart.h"
@@ -32,22 +25,12 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/base/vt/value.h"
-
 #include "pxr/usd/usdGeom/xform.h"
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdShade/shader.h"
 #include "USDIncludesEnd.h"
 
-#include "AssetRegistry/AssetRegistryModule.h"
 #include "Engine/ObjectLibrary.h"
-#include "Experimental/Async/AwaitableTask.h"
 #include "Tracks/MovieScene3DTransformTrack.h"
 #include "Sections/MovieScene3DTransformSection.h"
-#include "UObject/SavePackage.h"
-
-#include "UsdAttributeFunctionLibrary/Public/UsdAttributeFunctionLibrary.h"
-
 #include "CineCameraComponent.h"
 #include "UsdAttributeFunctionLibraryBPLibrary.h"
 #include "Sections/MovieSceneFloatSection.h"
