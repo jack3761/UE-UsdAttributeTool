@@ -24,148 +24,139 @@ UUsdAttributeFunctionLibraryBPLibrary::UUsdAttributeFunctionLibraryBPLibrary(con
 {
 
 }
+
 #if USE_USD_SDK
-UE::FUsdAttribute UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal(AUsdStageActor* StageActor,
-	FString PrimName, FString AttrName)
+/**
+ * @brief Retrieves the UE:FUsdAttribute object from a specified stage actor, prim name, and attribute name.
+ * 
+ * Searches through the Usd stage for the given prim and attribute names, and returns the 
+ * corresponding Usd attribute
+ * 
+ * @param StageActor The current UsdStageActor.
+ * @param PrimName The name of the USD prim to search for.
+ * @param AttrName The name of the attribute to retrieve from the prim.
+ * @return The requested Usd attribute, or an empty attribute if not found or an error occurs.
+ */
+UE::FUsdAttribute UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal(AUsdStageActor* StageActor, FString PrimName, FString AttrName)
 {
-	if (!StageActor)
-	{
-		UE_LOG(LogTemp, Error, TEXT("StageActor is null"));
-		return UE::FUsdAttribute();
-	}
-	
-	UE::FUsdStage StageBase = StageActor->GetUsdStage();
+    // Check if the StageActor is valid
+    if (!StageActor)
+    {
+        UE_LOG(LogTemp, Error, TEXT("StageActor is null"));
+        return UE::FUsdAttribute();
+    }
+    
+    // Retrieve the Usd stage from the actor
+    UE::FUsdStage StageBase = StageActor->GetUsdStage();
+    if (!StageBase)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No Usd Stage found"));
+        return UE::FUsdAttribute();
+    }
+    
+    UE_LOG(LogTemp, Log, TEXT("Found stage"));
 
-	if (!StageBase)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No Usd Stage found"));
-		return UE::FUsdAttribute();
-	}
+    UE::FSdfPath PrimPath;
+    UE::FUsdPrim root = StageBase.GetPseudoRoot();
+    if (!root)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Failed to get PseudoRoot"));
+        return UE::FUsdAttribute();
+    }
 
-	UE_LOG(LogTemp, Log, TEXT("Found stage"));
+    // Retrieve the path of the specified prim
+    GetSdfPathWithName(root, PrimName, PrimPath);
+    if (PrimPath.IsEmpty())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("PrimPath is empty for PrimName: %s"), *PrimName);
+        return UE::FUsdAttribute();
+    }
 
+    // Get the prim at the specified path
+    UE::FUsdPrim CurrentPrim = StageBase.GetPrimAtPath(PrimPath);
+    if (!CurrentPrim)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No Prim found at path: %s"), *PrimPath.GetString());
+        return UE::FUsdAttribute();
+    }
 
-	UE::FSdfPath PrimPath;
-	UE::FUsdPrim root = StageBase.GetPseudoRoot();
+    // Get the attribute from the prim
+    const TCHAR* AttrNameTChar = *AttrName;
+    UE::FUsdAttribute Attr = CurrentPrim.GetAttribute(AttrNameTChar);
+    if (!Attr)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No Attribute found with name: %s"), AttrNameTChar);
+        return UE::FUsdAttribute();
+    }
 
-	if (!root)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to get PseudoRoot"));
-		return UE::FUsdAttribute();
-	}
-	
-	GetSdfPathWithName(root, PrimName, PrimPath);
-
-	if (PrimPath.IsEmpty())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PrimPath is empty for PrimName: %s"), *PrimName);
-		return UE::FUsdAttribute();
-	}
-
-
-	UE::FUsdPrim CurrentPrim = StageBase.GetPrimAtPath(PrimPath);
-
-	if (!CurrentPrim)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No Prim found at path: %s"), *PrimPath.GetString());
-		return UE::FUsdAttribute();
-	}
-	
-	const TCHAR* AttrNameTChar = *AttrName;
-	UE::FUsdAttribute Attr = CurrentPrim.GetAttribute(AttrNameTChar);
-
-	if (!Attr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No Attribute found with name: %s"), AttrNameTChar);
-		return UE::FUsdAttribute();
-	}
-
-	return Attr;
+    return Attr;
 }
+
 #endif
 
 
-
-FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdVec3Attribute(AUsdStageActor* StageActor, FString PrimName,
-                                                                   FString AttrName)
+/**
+ * @brief Retrieves a Vec3 attribute from a Usd prim and converts it to an Unreal FVector.
+ * 
+ * Gets the specified Vec3 attribute from the given prim in the Usd stage and converts it to an FVector. 
+ * Vec3f, Vec3d, and Vec3i types are supported.
+ * 
+ * @param StageActor The current UsdStageActor.
+ * @param PrimName The name of the Usd prim to search for.
+ * @param AttrName The name of the Vec3 attribute to retrieve from the prim.
+ * @return An FVector representing the Vec3 attribute, or a default FVector if an error occurs.
+ */
+FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdVec3Attribute(AUsdStageActor* StageActor, FString PrimName, FString AttrName)
 {
 #if USE_USD_SDK
-	UE::FUsdAttribute Attr = GetUsdAttributeInternal(StageActor, PrimName, AttrName);
-	
-	if (!Attr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Specified attribute is not holding any value"))
-		return FVector();
-	}
-	
-	UE::FVtValue Value;
+    // Retrieve the Usd attribute from the specified prim
+    UE::FUsdAttribute Attr = GetUsdAttributeInternal(StageActor, PrimName, AttrName);
+    if (!Attr)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Specified attribute is not holding any value"));
+        return FVector();
+    }
 
-	bool bSuccess = Attr.Get(Value);
+    UE::FVtValue Value;
 
-	if (!bSuccess)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to get animated value for Attribute: %s"), *Attr.GetName().ToString());
-		return FVector();
-	}
+    // Get the value of the attribute
+    bool bSuccess = Attr.Get(Value);
+    if (!bSuccess)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Failed to get value for Attribute: %s"), *Attr.GetName().ToString());
+        return FVector();
+    }
 
-	
-	pxr::VtValue& PxrValue = Value.GetUsdValue();
-	pxr::TfType PxrValueType = PxrValue.GetType();
+    // Retrieve the underlying pxr::VtValue and its type
+    pxr::VtValue& PxrValue = Value.GetUsdValue();
+    pxr::TfType PxrValueType = PxrValue.GetType();
 
-	if (PxrValueType.IsA<pxr::GfVec3f>()) {
-		UE_LOG(LogTemp, Warning, TEXT("Vec3f"));
-	
-		return ConvertUsdVectorToFVector<pxr::GfVec3f>(PxrValue);
-	} else if (PxrValueType.IsA<pxr::GfVec3d>()) {
-		UE_LOG(LogTemp, Warning, TEXT("Vec3d"));
-	
-		return ConvertUsdVectorToFVector<pxr::GfVec3d>(PxrValue);
-	} else if (PxrValueType.IsA<pxr::GfVec3i>()) {
-		UE_LOG(LogTemp, Warning, TEXT("Vec3i"));
-	
-		return ConvertUsdVectorToFVector<pxr::GfVec3i>(PxrValue);
-	} else {
-		UE_LOG(LogTemp, Warning, TEXT("Unsupported type for Attribute."));
-		return FVector();
-	}
-	
+    // Check the type of the value and convert it to an FVector accordingly
+    if (PxrValueType.IsA<pxr::GfVec3f>())
+    {
+        UE_LOG(LogTemp, Log, TEXT("Vec3f"));
+        return ConvertUsdVectorToFVector<pxr::GfVec3f>(PxrValue);
+    }
+    else if (PxrValueType.IsA<pxr::GfVec3d>())
+    {
+        UE_LOG(LogTemp, Log, TEXT("Vec3d"));
+        return ConvertUsdVectorToFVector<pxr::GfVec3d>(PxrValue);
+    }
+    else if (PxrValueType.IsA<pxr::GfVec3i>())
+    {
+        UE_LOG(LogTemp, Log, TEXT("Vec3i"));
+        return ConvertUsdVectorToFVector<pxr::GfVec3i>(PxrValue);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Unsupported type for Attribute."));
+        return FVector();
+    }
+
 #else
-	UE_LOG(LogTemp, Warning, TEXT("USE_USD_SDK not enabled, unable to access UsdValue"))
-	return FVector();
-#endif
-	
-}
-
-
-float UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(AUsdStageActor* StageActor, FString PrimName,
-                                                                  FString AttrName)
-{
-#if USE_USD_SDK
-	return GetUsdAttributeValueInternal<float>(StageActor, PrimName, AttrName);
-#else
-	return 0.0;
-#endif
-
-}
-
-
-double UUsdAttributeFunctionLibraryBPLibrary::GetUsdDoubleAttribute(AUsdStageActor* StageActor, FString PrimName, FString AttrName)
-{
-#if USE_USD_SDK
-	return GetUsdAttributeValueInternal<double>(StageActor, PrimName, AttrName);
-#else
-	return 0.0;
-#endif
-}
-
-int UUsdAttributeFunctionLibraryBPLibrary::GetUsdIntAttribute(AUsdStageActor* StageActor, FString PrimName,
-	FString AttrName)
-{
-#if USE_USD_SDK
-
-	return GetUsdAttributeValueInternal<int>(StageActor, PrimName, AttrName);
-#else
-	return 0;
+    // Log a warning if the USD SDK is not enabled
+    UE_LOG(LogTemp, Warning, TEXT("USE_USD_SDK not enabled, unable to access UsdValue"));
+    return FVector();
 #endif
 }
 
@@ -213,6 +204,38 @@ FVector UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedVec3Attribute(AUsdS
 #else
 	UE_LOG(LogTemp, Warning, TEXT("USE_USD_SDK not enabled, unable to access UsdValue"))
 	return FVector();
+#endif
+}
+
+float UUsdAttributeFunctionLibraryBPLibrary::GetUsdFloatAttribute(AUsdStageActor* StageActor, FString PrimName,
+                                                                  FString AttrName)
+{
+#if USE_USD_SDK
+	return GetUsdAttributeValueInternal<float>(StageActor, PrimName, AttrName);
+#else
+	return 0.0;
+#endif
+
+}
+
+
+double UUsdAttributeFunctionLibraryBPLibrary::GetUsdDoubleAttribute(AUsdStageActor* StageActor, FString PrimName, FString AttrName)
+{
+#if USE_USD_SDK
+	return GetUsdAttributeValueInternal<double>(StageActor, PrimName, AttrName);
+#else
+	return 0.0;
+#endif
+}
+
+int UUsdAttributeFunctionLibraryBPLibrary::GetUsdIntAttribute(AUsdStageActor* StageActor, FString PrimName,
+	FString AttrName)
+{
+#if USE_USD_SDK
+
+	return GetUsdAttributeValueInternal<int>(StageActor, PrimName, AttrName);
+#else
+	return 0;
 #endif
 }
 

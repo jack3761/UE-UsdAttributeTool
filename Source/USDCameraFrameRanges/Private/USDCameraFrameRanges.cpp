@@ -61,8 +61,6 @@ void FUSDCameraFrameRangesModule::StartupModule()
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(USDCameraFrameRangesTabName, FOnSpawnTab::CreateRaw(this, &FUSDCameraFrameRangesModule::OnSpawnPluginTab))
 		.SetDisplayName(LOCTEXT("FUSDCameraFrameRangesTabTitle", "USDCameraFrameRanges"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);
-
-	
 }
 
 void FUSDCameraFrameRangesModule::ShutdownModule()
@@ -106,13 +104,28 @@ void FUSDCameraFrameRangesModule::RegisterMenus()
 	}
 }
 
+void FUSDCameraFrameRangesModule::PluginButtonClicked()
+{
+	FGlobalTabmanager::Get()->TryInvokeTab(USDCameraFrameRangesTabName);    
+}
 
 
+/**
+ * @brief Spawns the plugin tab for the USD Camera Frame Ranges module.
+ * Creates the UI elements and layout for the plugin tab by initialising
+ * the stage actor, retrieving camera information from the Usd stage,
+ * and setting up input fields and buttons for user interaction.
+ * 
+ * @param SpawnTabArgs Arguments for spawning the tab.
+ * @return A shared reference to the created SDockTab widget.
+ */
 TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnTabArgs& SpawnTabArgs)
 {
-	StageActor = FindUsdStageActor();
+    // Find the Usd stage actor in the scene
+    StageActor = FindUsdStageActor();
     if (!StageActor)
     {
+        // If the Usd stage actor is not found, display a message
         return SNew(SDockTab)
             .TabRole(ETabRole::NomadTab)
             [
@@ -125,9 +138,11 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
             ];
     }
 
+    // Retrieve camera information from the Usd stage
     TArray<FCameraInfo> Cameras = GetCamerasFromUSDStage();
     if (Cameras.Num() == 0)
     {
+        // If no cameras are found, display a message
         return SNew(SDockTab)
             .TabRole(ETabRole::NomadTab)
             [
@@ -140,14 +155,16 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
             ];
     }
 
+    // Create input text boxes for sequence path, prim name, and attribute name
     TSharedPtr<SEditableTextBox> SequenceInputTextBox = SNew(SEditableTextBox);
     TSharedPtr<SEditableTextBox> PrimInputTextBox = SNew(SEditableTextBox);
     TSharedPtr<SEditableTextBox> AttrInputTextBox = SNew(SEditableTextBox);
 
-	TSharedPtr<SVerticalBox> LevelSequenceButtons = SNew(SVerticalBox);
+    // Create vertical boxes for level sequence buttons and camera list
+    TSharedPtr<SVerticalBox> LevelSequenceButtons = SNew(SVerticalBox);
     TSharedPtr<SVerticalBox> CameraList = SNew(SVerticalBox);
-	
-    // Input Fields with Labels
+
+    // Add input fields with labels to the level sequence buttons
     LevelSequenceButtons->AddSlot()
     .Padding(10)
     [
@@ -167,7 +184,7 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
         ]
     ];
 
-    // Prim path and Attribute name on the same row
+    // Add prim name and attribute name fields on the same row
     LevelSequenceButtons->AddSlot()
     .Padding(10)
     [
@@ -210,8 +227,8 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
             })
         ]
     ];
-	
-	// Camera List Header
+
+    // Add header for the camera list
     CameraList->AddSlot()
     .Padding(2)
     [
@@ -242,106 +259,117 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
         CameraList->AddSlot()
         .Padding(2)
         [
-	        SNew(SVerticalBox)
-	        + SVerticalBox::Slot()
-	        .AutoHeight()
-	        [
-	            SNew(SHorizontalBox)
-	            + SHorizontalBox::Slot()
-	            .FillWidth(0.4)
-	            [
-	                SNew(STextBlock)
-	                .Text(FText::FromString(Camera.CameraName))
-	            ]
-	            + SHorizontalBox::Slot()
-	            .FillWidth(0.4)
-	            [
-	                SNew(STextBlock)
-	                .Text(FText::FromString(FString::Printf(TEXT("%d - %d"), Camera.StartFrame, Camera.EndFrame)))
-	            ]
-	            + SHorizontalBox::Slot()
-	            .AutoWidth()
-	            [
-	                SNew(SButton)
-	                .Text(FText::FromString(TEXT("Duplicate")))
-	                .OnClicked_Lambda([this, Camera, SequenceInputTextBox]()
-	                {
-	                    return OnDuplicateButtonClicked(Camera, SequenceInputTextBox->GetText().ToString());
-	                })
-	            ]
-		    ]
+            SNew(SVerticalBox)
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            [
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot()
+                .FillWidth(0.4)
+                [
+                    SNew(STextBlock)
+                    .Text(FText::FromString(Camera.CameraName))
+                ]
+                + SHorizontalBox::Slot()
+                .FillWidth(0.4)
+                [
+                    SNew(STextBlock)
+                    .Text(FText::FromString(FString::Printf(TEXT("%d - %d"), Camera.StartFrame, Camera.EndFrame)))
+                ]
+                + SHorizontalBox::Slot()
+                .AutoWidth()
+                [
+                    SNew(SButton)
+                    .Text(FText::FromString(TEXT("Duplicate")))
+                    .OnClicked_Lambda([this, Camera, SequenceInputTextBox]()
+                    {
+                        return OnDuplicateButtonClicked(Camera, SequenceInputTextBox->GetText().ToString());
+                    })
+                ]
+            ]
         ];
     }
 
+    // Create and return the final tab layout with scroll boxes and buttons
     return SNew(SDockTab)
         .TabRole(ETabRole::NomadTab)
         [
             SNew(SScrollBox)
-	        + SScrollBox::Slot()
-	        [
-		        SNew(SVerticalBox)
-        		+ SVerticalBox::Slot()
-				.AutoHeight()
-				.Padding(20)
-				[
-					LevelSequenceButtons.ToSharedRef()
-				]
-	            + SVerticalBox::Slot()
-	            .AutoHeight()
-	            .Padding(20)
-	            [
-	                SNew(SScrollBox)
-	                + SScrollBox::Slot()
-	                [
-	                    SNew(SBorder)
-	                    .Padding(FMargin(20))
-	                    [
-	                        CameraList.ToSharedRef()
-	                    ]
-	                ]
-	            ]
-	            + SVerticalBox::Slot()
-	            .AutoHeight()
-	            .Padding(10)
-	            [
-	                SNew(SHorizontalBox)
-	                + SHorizontalBox::Slot()
-	                .AutoWidth()
-	                .Padding(10)
-	                [
-	                    SNew(SButton)
-	                    .Text(FText::FromString(TEXT("Material swap")))
-	                    .OnClicked(FOnClicked::CreateRaw(this, &FUSDCameraFrameRangesModule::OnMaterialSwapButtonClicked))
-	                ]
-	                + SHorizontalBox::Slot()
-	                .AutoWidth()
-	                .Padding(10)
-	                [
-	                    SNew(SButton)
-	                    .Text(FText::FromString(TEXT("Disable Manual Focus")))
-	                    .OnClicked(FOnClicked::CreateRaw(this, &FUSDCameraFrameRangesModule::OnDisableManualFocusButtonClicked))
-	                ]
-	            ]
-		    ]
+            + SScrollBox::Slot()
+            [
+                SNew(SVerticalBox)
+                + SVerticalBox::Slot()
+                .AutoHeight()
+                .Padding(20)
+                [
+                    LevelSequenceButtons.ToSharedRef()
+                ]
+                + SVerticalBox::Slot()
+                .AutoHeight()
+                .Padding(20)
+                [
+                    SNew(SScrollBox)
+                    + SScrollBox::Slot()
+                    [
+                        SNew(SBorder)
+                        .Padding(FMargin(20))
+                        [
+                            CameraList.ToSharedRef()
+                        ]
+                    ]
+                ]
+                + SVerticalBox::Slot()
+                .AutoHeight()
+                .Padding(10)
+                [
+                    SNew(SHorizontalBox)
+                    + SHorizontalBox::Slot()
+                    .AutoWidth()
+                    .Padding(10)
+                    [
+                        SNew(SButton)
+                        .Text(FText::FromString(TEXT("Material swap")))
+                        .OnClicked(FOnClicked::CreateRaw(this, &FUSDCameraFrameRangesModule::OnMaterialSwapButtonClicked))
+                    ]
+                    + SHorizontalBox::Slot()
+                    .AutoWidth()
+                    .Padding(10)
+                    [
+                        SNew(SButton)
+                        .Text(FText::FromString(TEXT("Disable Manual Focus")))
+                        .OnClicked(FOnClicked::CreateRaw(this, &FUSDCameraFrameRangesModule::OnDisableManualFocusButtonClicked))
+                    ]
+                ]
+            ]
         ];
-
 }
 
+/**
+ * @brief Finds the first Usd Stage Actor in the current level.
+ * Searches for an AUsdStageActor in the current editor world context.
+ * If there are multiple then only then only the first one is returned.
+ * 
+ * @return A pointer to the found AUsdStageActor, or nullptr if not found or multiple actors are present.
+ */
 TObjectPtr<AUsdStageActor> FUSDCameraFrameRangesModule::FindUsdStageActor()
 {
 	UE_LOG(LogTemp, Log, TEXT("Searching for UsdStageActor"));
-	
+
+	// Check if GEditor is available
 	if (!GEditor)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GEditor is not available"));
 		return nullptr;
 	}
     
+	// Get the current editor world
 	UWorld* World = GEditor->GetEditorWorldContext().World();
 
+	// Find all AUsdStageActor instances in the world
 	TArray<AActor*> StageActors;
 	UGameplayStatics::GetAllActorsOfClass(World, AUsdStageActor::StaticClass(), StageActors);
 
+	// Check the number of found stage actors
 	if (StageActors.Num() == 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No AUsdStageActor found in the world"));
@@ -350,200 +378,247 @@ TObjectPtr<AUsdStageActor> FUSDCameraFrameRangesModule::FindUsdStageActor()
 	else if (StageActors.Num() > 1)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Multiple UsdStageActor's detected, using first one found"));
-		return nullptr;
 	}
-		
 
-	// Will only work with one UsdStageActor, which is the aim for this project
+	// Cast the first found actor to AUsdStageActor
 	TObjectPtr<AUsdStageActor> FoundStageActor = Cast<AUsdStageActor>(StageActors[0]);
 	if (!FoundStageActor)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("USDStageActor pointer is null"));
 		return nullptr;
 	}
-    
+
 	UE_LOG(LogTemp, Log, TEXT("USDStageActor assigned"));
 	return FoundStageActor;
 }
 
+
+/**
+ * @brief Handles the event when the duplicate button is clicked.
+ * Spawns a new CineCameraActor, sets its properties based on the found Usd camera information,
+ * and adds it to the specified level sequence if a path is provided.
+ * 
+ * @param Camera The camera information to duplicate.
+ * @param LevelSequencePath The path to the level sequence where the new camera should be added.
+ * @return FReply Indicates that the event has been handled.
+ */
 FReply FUSDCameraFrameRangesModule::OnDuplicateButtonClicked(FCameraInfo Camera, FString LevelSequencePath)
 {
-	UE_LOG(LogTemp, Log, TEXT("Duplicate button clicked for camera: %s"), *Camera.CameraName);
+    UE_LOG(LogTemp, Log, TEXT("Duplicate button clicked for camera: %s"), *Camera.CameraName);
 
-	UWorld* World =  GEditor->GetEditorWorldContext().World();
-	
-	TObjectPtr<ACineCameraActor> NewCameraActor = World->SpawnActor<ACineCameraActor>();
-	
-	if (!NewCameraActor)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to spawn new CineCameraActor"));
-		return FReply::Handled();
-	}
-	
-	FString NewLabel = Camera.CameraName + TEXT("_duplicate");
-	NewCameraActor->SetActorLabel(NewLabel);
+    // Get the current editor world
+    UWorld* World =  GEditor->GetEditorWorldContext().World();
 
-	UE_LOG(LogTemp, Log, TEXT("New camera created with label: %s"), *NewCameraActor->GetActorLabel());
-	UE_LOG(LogTemp, Log, TEXT("Camera name: %s"), *NewCameraActor->GetName());
-	
-	UE::FVtValue Value;
-	
-	UE_LOG(LogTemp, Log, TEXT("Getting value"));
+    // Spawn a new CineCameraActor
+    TObjectPtr<ACineCameraActor> NewCameraActor = World->SpawnActor<ACineCameraActor>();
 
-	// bool bSuccess = Camera.Translation.Get(Value, 0.0);
-	FVector Translation = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedVec3Attribute(StageActor, Camera.CameraName, "xformOp:translate", 0.0);
+    if (!NewCameraActor)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Failed to spawn new CineCameraActor"));
+        return FReply::Handled();
+    }
 
-	UE_LOG(LogTemp, Log, TEXT("Value received"));
+    // Set the label for the new camera
+    FString NewLabel = Camera.CameraName + TEXT("_duplicate");
+    NewCameraActor->SetActorLabel(NewLabel);
 
-	if (Translation == FVector::ZeroVector)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Zero vector returned, check to see if value found correctly"))
-	}
+    UE_LOG(LogTemp, Log, TEXT("New camera created with label: %s"), *NewCameraActor->GetActorLabel());
+    UE_LOG(LogTemp, Log, TEXT("Camera name: %s"), *NewCameraActor->GetName());
 
-	FVector CameraLocation(Translation[0], Translation[2], Translation[1]);
-	
-	NewCameraActor->SetActorLocation(CameraLocation);
+    // Retrieve the translation value from the Usd attribute
+    UE::FVtValue Value;
+    UE_LOG(LogTemp, Log, TEXT("Getting value"));
+    FVector Translation = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedVec3Attribute(StageActor, Camera.CameraName, "xformOp:translate", 0.0);
+    UE_LOG(LogTemp, Log, TEXT("Value received"));
 
-	FVector Rotation = 	UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedVec3Attribute(StageActor, Camera.CameraName, "xformOp:rotateXYZ", 0.0);
+    if (Translation == FVector::ZeroVector)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Zero vector returned, check to see if value found correctly"));
+    }
 
-	if (Rotation == FVector::ZeroVector)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Zero vector returned, check to see if value found correctly"))
-	}
+    // Set the location of the new camera, factoring in Unreal's Z up
+    FVector CameraLocation(Translation[0], Translation[2], Translation[1]);
+    NewCameraActor->SetActorLocation(CameraLocation);
 
-	FRotator CameraRotation = UUsdAttributeFunctionLibraryBPLibrary::ConvertToUnrealRotator(Rotation);
+    // Retrieve the rotation value from the Usd attribute
+    FVector Rotation = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedVec3Attribute(StageActor, Camera.CameraName, "xformOp:rotateXYZ", 0.0);
 
-	NewCameraActor->SetActorRotation(CameraRotation);
+    if (Rotation == FVector::ZeroVector)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Zero vector returned, check to see if value found correctly"));
+    }
 
-	FCameraFocusSettings FocusSettings;
-	FocusSettings.ManualFocusDistance = Camera.FocusDistance;
-	
-	FCameraFilmbackSettings FilmbackSettings;
-	FilmbackSettings.SensorWidth = Camera.HorizontalAperture;
-	FilmbackSettings.SensorHeight = Camera.VerticalAperture;
+    // Set the rotation of the new camera, converting to the unreal rotation standard
+    FRotator CameraRotation = UUsdAttributeFunctionLibraryBPLibrary::ConvertToUnrealRotator(Rotation);
+    NewCameraActor->SetActorRotation(CameraRotation);
 
-	UE_LOG(LogTemp, Log, TEXT("Camera settings: \n Focal Length: %f\n Focus Distance: %f\n Aperture: %f\n Sensor Width: %f\n Sensor Height: %f\n"), Camera.FocalLength, Camera.FocusDistance, Camera.FStop, Camera.HorizontalAperture, Camera.VerticalAperture);
-	
-	NewCameraActor->GetCineCameraComponent()->SetCurrentFocalLength(Camera.FocalLength);
-	NewCameraActor->GetCineCameraComponent()->SetFocusSettings(FocusSettings);
-	NewCameraActor->GetCineCameraComponent()->SetCurrentAperture(Camera.FStop);
-	NewCameraActor->GetCineCameraComponent()->SetFilmback(FilmbackSettings);
+    // Set the focus and filmback settings of the new camera based on the Usd camera
+    FCameraFocusSettings FocusSettings;
+    FocusSettings.ManualFocusDistance = Camera.FocusDistance;
+    FCameraFilmbackSettings FilmbackSettings;
+    FilmbackSettings.SensorWidth = Camera.HorizontalAperture;
+    FilmbackSettings.SensorHeight = Camera.VerticalAperture;
 
-	// CreateCameraLevelSequence(NewCameraActor, StageActor, Camera);
-	if (!LevelSequencePath.IsEmpty())
-	{
-		AddCameraToLevelSequence(LevelSequencePath, NewCameraActor, Camera);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("Level sequence path empty, static camera created"))
-	}
+    UE_LOG(LogTemp, Log, TEXT("Camera settings: \n Focal Length: %f\n Focus Distance: %f\n Aperture: %f\n Sensor Width: %f\n Sensor Height: %f\n"), Camera.FocalLength, Camera.FocusDistance, Camera.FStop, Camera.HorizontalAperture, Camera.VerticalAperture);
 
-	return FReply::Handled();
+    NewCameraActor->GetCineCameraComponent()->SetCurrentFocalLength(Camera.FocalLength);
+    NewCameraActor->GetCineCameraComponent()->SetFocusSettings(FocusSettings);
+    NewCameraActor->GetCineCameraComponent()->SetCurrentAperture(Camera.FStop);
+    NewCameraActor->GetCineCameraComponent()->SetFilmback(FilmbackSettings);
+
+    // Add the new camera to the level sequence if a path is provided
+    if (!LevelSequencePath.IsEmpty())
+    {
+        AddCameraToLevelSequence(LevelSequencePath, NewCameraActor, Camera);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Log, TEXT("Level sequence path empty, static camera created"));
+    }
+
+    return FReply::Handled();
 }
 
+
+/**
+ * @brief Handles the Material Swap button click event.
+ * 
+ * Swaps the materials of the Usd stage actor's generated components with 
+ * the corresponding materials found in the Unreal project.
+ * 
+ * @return A reply indicating whether the event was handled.
+ */
 FReply FUSDCameraFrameRangesModule::OnMaterialSwapButtonClicked()
 {
-	UE::FUsdStage Stage = StageActor->GetUsdStage();
-	UE::FUsdPrim root = Stage.GetPseudoRoot();
-	TArray<FMaterialInfo> MaterialNames;
+    UE::FUsdStage Stage = StageActor->GetUsdStage();
+    UE::FUsdPrim root = Stage.GetPseudoRoot();
+    TArray<FMaterialInfo> MaterialNames;
 
-	TArray<UMaterial*>* FoundMaterials = GetAllMaterials();
-	
-	TraverseAndCollectMaterials(root, MaterialNames);
+	// Find the materials present in the project
+    TArray<UMaterial*>* FoundMaterials = GetAllMaterials();
 
-	if (MaterialNames.Num() >0 )
-	{
-		for (FMaterialInfo Mat : MaterialNames)
-		{
-			UE::FUsdPrim CurrentPrim = Stage.GetPrimAtPath(Mat.PrimPath);
-			USceneComponent* GeneratedComponent = StageActor->GetGeneratedComponent(Mat.PrimPath.GetString());
-			
-			if (GeneratedComponent)
-			{
-				UE_LOG(LogTemp, Log, TEXT("ObjName: %s Generated Component name: %s"), *Mat.ObjName, *GeneratedComponent->GetName());
+	// Traverse the Usd stage to find materials within the Usd and
+    TraverseAndCollectMaterials(root, MaterialNames);
 
-				// Find the Unreal Material with the same name as the USD material
-				FString MaterialName = Mat.MatName;
-				for (UMaterial* FoundMaterial : *FoundMaterials)
-				{
-					if (MaterialName.Equals(FoundMaterial->GetName()))
-					{
-						UMeshComponent* MeshComponent = Cast<UMeshComponent>(GeneratedComponent);
+	// Iterate over all of the Usd materials and set those components to have the Unreal equivalent
+    if (MaterialNames.Num() > 0)
+    {
+        for (FMaterialInfo Mat : MaterialNames)
+        {
+            UE::FUsdPrim CurrentPrim = Stage.GetPrimAtPath(Mat.PrimPath);
+            USceneComponent* GeneratedComponent = StageActor->GetGeneratedComponent(Mat.PrimPath.GetString());
+            
+            if (GeneratedComponent)
+            {
+                UE_LOG(LogTemp, Log, TEXT("ObjName: %s Generated Component name: %s"), *Mat.ObjName, *GeneratedComponent->GetName());
 
-						MeshComponent->SetMaterial(0, FoundMaterial);
-						UE_LOG(LogTemp, Log, TEXT("Assigned material: %s to component: %s"), *MaterialName, *MeshComponent->GetName());
-					}
-					else
-					{
-						UE_LOG(LogTemp, Warning, TEXT("Material: %s not found in project"), *MaterialName);
-					}
-				}
-			}
-		}
-	}
-	return FReply::Handled();
+                // Find the Unreal Material with the same name as the Usd material
+                FString MaterialName = Mat.MatName;
+                for (UMaterial* FoundMaterial : *FoundMaterials)
+                {
+                    if (MaterialName.Equals(FoundMaterial->GetName()))
+                    {
+                        UMeshComponent* MeshComponent = Cast<UMeshComponent>(GeneratedComponent);
+
+                        MeshComponent->SetMaterial(0, FoundMaterial);
+                        UE_LOG(LogTemp, Log, TEXT("Assigned material: %s to component: %s"), *MaterialName, *MeshComponent->GetName());
+                    }
+                    else
+                    {
+                        UE_LOG(LogTemp, Warning, TEXT("Material: %s not found in project"), *MaterialName);
+                    }
+                }
+            }
+        }
+    }
+    return FReply::Handled();
 }
 
+/**
+ * @brief Handles the Attribute Export button click event.
+ * 
+ * Exports the specified float Usd attribute to a level sequence in Unreal Engine.
+ * 
+ * @param InputPrim The Usd prim name.
+ * @param InputAttr The Usd attribute name.
+ * @param LevelSequencePath The path to the level sequence in Unreal Engine.
+ * @return A reply indicating whether the event was handled.
+ */
 FReply FUSDCameraFrameRangesModule::OnAttributeExportButtonClicked(const FString& InputPrim, const FString& InputAttr, const FString& LevelSequencePath)
 {
-	if (InputPrim.IsEmpty() || InputAttr.IsEmpty() || LevelSequencePath.IsEmpty())
-	{
-		UE_LOG(LogTemp, Error, TEXT("One of the inputs is empty, please use valid input"))
-		return FReply::Unhandled();
-	}
-	
-	ULevelSequence* LevelSequence = Cast<ULevelSequence>(StaticLoadObject(ULevelSequence::StaticClass(), nullptr, *LevelSequencePath));
+    if (InputPrim.IsEmpty() || InputAttr.IsEmpty() || LevelSequencePath.IsEmpty())
+    {
+        UE_LOG(LogTemp, Error, TEXT("One of the inputs is empty, please use valid input"))
+        return FReply::Unhandled();
+    }
 
-	if (LevelSequence == nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("No level sequence found at path %s"), *LevelSequencePath);
-		return FReply::Unhandled();
-	}
-	
-	UMovieSceneFloatTrack* FloatTrack = LevelSequence->MovieScene->AddTrack<UMovieSceneFloatTrack>();
-	UMovieSceneFloatSection* FloatSection = Cast<UMovieSceneFloatSection>(FloatTrack->CreateNewSection());
-	
-	FMovieSceneFloatChannel* FloatVal = FloatSection->GetChannelProxy().GetChannel<FMovieSceneFloatChannel>(0);
+	// Get the level sequence from the specified oath
+    ULevelSequence* LevelSequence = Cast<ULevelSequence>(StaticLoadObject(ULevelSequence::StaticClass(), nullptr, *LevelSequencePath));
 
-	UE::FUsdAttribute TargetAttr = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal(StageActor, InputPrim, InputAttr);
+    if (LevelSequence == nullptr)
+    {
+        UE_LOG(LogTemp, Error, TEXT("No level sequence found at path %s"), *LevelSequencePath);
+        return FReply::Unhandled();
+    }
 
-	if (!TargetAttr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Valid attribute not found"));
-		FReply::Unhandled();
-	}
+	// Create the float track and section on the specified level sequence
+    UMovieSceneFloatTrack* FloatTrack = LevelSequence->MovieScene->AddTrack<UMovieSceneFloatTrack>();
+    UMovieSceneFloatSection* FloatSection = Cast<UMovieSceneFloatSection>(FloatTrack->CreateNewSection());
 
-	TArray<double> TimeSamples;
-	TargetAttr.GetTimeSamples(TimeSamples);
+	// Get the channel on the Level sequence to add the values onto
+    FMovieSceneFloatChannel* FloatVal = FloatSection->GetChannelProxy().GetChannel<FMovieSceneFloatChannel>(0);
 
-	if (TimeSamples.Num() > 1)
-	{
-		int StartFrame = TimeSamples[0];
-		int EndFrame = TimeSamples.Last();
-	
-		int TicksPerFrame = LevelSequence->MovieScene->GetTickResolution().AsDecimal() / LevelSequence->MovieScene->GetDisplayRate().AsDecimal();
-		FloatSection->SetRange(TRange<FFrameNumber>(FFrameNumber(StartFrame * TicksPerFrame), FFrameNumber(EndFrame * TicksPerFrame)));
-	
-		for (double Time : TimeSamples)
-		{
-			int KeyInt = static_cast<int>(Time);
-			FFrameNumber FrameNumber = FFrameNumber(KeyInt * TicksPerFrame);
-			float AttrVal = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, InputPrim, InputAttr, Time);
+	// Access the attribute to find its timesamples
+    UE::FUsdAttribute TargetAttr = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal(StageActor, InputPrim, InputAttr);
 
-			FloatVal->AddConstantKey(FrameNumber, AttrVal);
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No timesamples found on specified attribute"))
-	}
+    if (!TargetAttr)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Valid attribute not found"));
+        return FReply::Unhandled();
+    }
 
-	FloatTrack->AddSection(*FloatSection);
+    TArray<double> TimeSamples;
+    TargetAttr.GetTimeSamples(TimeSamples);
 
-	return FReply::Handled();
+	// Only add to the sequence if the attribute contains animation
+    if (TimeSamples.Num() > 1)
+    {
+        int StartFrame = TimeSamples[0];
+        int EndFrame = TimeSamples.Last();
+
+    	// Calculate the ticks per frame as unreal doesn't natively provide access to the frames on the sequence
+        int TicksPerFrame = LevelSequence->MovieScene->GetTickResolution().AsDecimal() / LevelSequence->MovieScene->GetDisplayRate().AsDecimal();
+        FloatSection->SetRange(TRange<FFrameNumber>(FFrameNumber(StartFrame * TicksPerFrame), FFrameNumber(EndFrame * TicksPerFrame)));
+
+    	// Iterate over the time samples and add a key for the value at that frame
+        for (double Time : TimeSamples)
+        {
+            int KeyInt = static_cast<int>(Time);
+            FFrameNumber FrameNumber = FFrameNumber(KeyInt * TicksPerFrame);
+            float AttrVal = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, InputPrim, InputAttr, Time);
+
+            FloatVal->AddConstantKey(FrameNumber, AttrVal);
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No timesamples found on specified attribute"))
+    }
+
+	// Add the keyed section to the level sequence track
+    FloatTrack->AddSection(*FloatSection);
+
+    return FReply::Handled();
 }
 
+
+/**
+ * @brief Handles the Disable Manual Focus button click event.
+ * 
+ * Finds all CineCameraActors in the current world and disables manual focus for each of them.
+ * 
+ * @return A reply indicating whether the event was handled.
+ */
 FReply FUSDCameraFrameRangesModule::OnDisableManualFocusButtonClicked()
 {
 	UWorld* World = GEditor->GetEditorWorldContext().World();
@@ -558,11 +633,18 @@ FReply FUSDCameraFrameRangesModule::OnDisableManualFocusButtonClicked()
 	return FReply::Handled();
 }
 
-// adapted from https://forums.unrealengine.com/t/plugin-get-all-materials-in-current-project/342793/10
+/**
+ * @brief Retrieves all UMaterial assets in the project.
+ * 
+ * Searches in the /Game/Materials directory in the project and collects all UMaterial assets.
+ * 
+ * Adapted from https://forums.unrealengine.com/t/plugin-get-all-materials-in-current-project/342793/10
+ * 
+ * @return A pointer to an array of UMaterial assets found in the project.
+ */
 TArray<UMaterial*>* FUSDCameraFrameRangesModule::GetAllMaterials()
 {
 	TArray<UMaterial*>* Assets = new TArray<UMaterial*>();
-
 
 	// Create a library to load all asset data, not filtered by a specific class
 	UObjectLibrary *lib = UObjectLibrary::CreateLibrary(UObject::StaticClass(), false, true);
@@ -577,9 +659,11 @@ TArray<UMaterial*>* FUSDCameraFrameRangesModule::GetAllMaterials()
 	UE_LOG(LogTemp, Warning, TEXT("Found %d assets"), assetData.Num());
 
 	// Iterate through all asset data and add to the Assets array
-	for (FAssetData asset : assetData) {
+	for (FAssetData asset : assetData)
+	{
 		UMaterial* obj = Cast<UMaterial>(asset.GetAsset());
-		if (obj) {
+		if (obj)
+		{
 			UE_LOG(LogTemp, Warning, TEXT("Asset: %s, type: %s"), *obj->GetName(), *obj->GetClass()->GetName());
 			Assets->Add(obj);
 		}
@@ -588,135 +672,144 @@ TArray<UMaterial*>* FUSDCameraFrameRangesModule::GetAllMaterials()
 	return Assets;
 }
 
-void FUSDCameraFrameRangesModule::AddCameraToLevelSequence(FString LevelSequencePath,
-	TObjectPtr<ACineCameraActor> CameraActor, FCameraInfo Camera)
+
+/**
+ * @brief Adds a CineCameraActor to a specified Level Sequence and sets up its transform track with animation data.
+ * 
+ * Loads a Level Sequence from a given path, creates a possessable for the camera actor, and sets up
+ * a transform track with keyframes for translation and rotation based on the provided camera information.
+ * 
+ * @param LevelSequencePath Path to the Level Sequence asset.
+ * @param CameraActor Pointer to the CineCameraActor to be added to the Level Sequence.
+ * @param Camera Information about the camera including translation and rotation keyframes.
+ */
+void FUSDCameraFrameRangesModule::AddCameraToLevelSequence(const FString& LevelSequencePath, const TObjectPtr<ACineCameraActor>& CameraActor, FCameraInfo Camera)
 {
-	ULevelSequence* LevelSequence = Cast<ULevelSequence>(StaticLoadObject(ULevelSequence::StaticClass(), nullptr, *LevelSequencePath));
+    // Load the Level Sequence from the given path
+    ULevelSequence* LevelSequence = Cast<ULevelSequence>(StaticLoadObject(ULevelSequence::StaticClass(), nullptr, *LevelSequencePath));
 
-	if (LevelSequence == nullptr)
-	{
-		UE_LOG(LogTemp, Error, TEXT("No level sequence found at path %s"), *LevelSequencePath);
-		return;
-	}
+    if (LevelSequence == nullptr)
+    {
+        UE_LOG(LogTemp, Error, TEXT("No level sequence found at path %s"), *LevelSequencePath);
+        return;
+    }
 
-	FGuid Guid = Cast<UMovieSceneSequence>(LevelSequence)->CreatePossessable(CameraActor);
+    // Create a possessable for the camera actor in the Level Sequence
+    FGuid Guid = Cast<UMovieSceneSequence>(LevelSequence)->CreatePossessable(CameraActor);
 
-	if (Guid.IsValid())
-	{
-		UE_LOG(LogTemp, Log, TEXT("Camera actor added to %s with Guid %s"), *LevelSequencePath, *Guid.ToString());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Guid invalid"));
-		return;
-	}
+    if (Guid.IsValid())
+    {
+        UE_LOG(LogTemp, Log, TEXT("Camera actor added to %s with Guid %s"), *LevelSequencePath, *Guid.ToString());
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("Guid invalid"));
+        return;
+    }
 
-	UMovieScene3DTransformTrack* TransformTrack = LevelSequence->MovieScene->AddTrack<UMovieScene3DTransformTrack>(Guid);
-	UMovieScene3DTransformSection* TransformSection = Cast<UMovieScene3DTransformSection>(TransformTrack->CreateNewSection());
+    // Add a transform track and section for the camera
+    UMovieScene3DTransformTrack* TransformTrack = LevelSequence->MovieScene->AddTrack<UMovieScene3DTransformTrack>(Guid);
+    UMovieScene3DTransformSection* TransformSection = Cast<UMovieScene3DTransformSection>(TransformTrack->CreateNewSection());
 
-	int TicksPerFrame = LevelSequence->MovieScene->GetTickResolution().AsDecimal() / LevelSequence->MovieScene->GetDisplayRate().AsDecimal();
-	TransformSection->SetRange(TRange<FFrameNumber>(FFrameNumber(Camera.StartFrame * TicksPerFrame), FFrameNumber(Camera.EndFrame * TicksPerFrame)));
-	
-	FMovieSceneDoubleChannel* TranslateX = TransformSection->GetChannelProxy().GetChannel<FMovieSceneDoubleChannel>(0);
-	FMovieSceneDoubleChannel* TranslateY = TransformSection->GetChannelProxy().GetChannel<FMovieSceneDoubleChannel>(1);
-	FMovieSceneDoubleChannel* TranslateZ = TransformSection->GetChannelProxy().GetChannel<FMovieSceneDoubleChannel>(2);
+    int TicksPerFrame = LevelSequence->MovieScene->GetTickResolution().AsDecimal() / LevelSequence->MovieScene->GetDisplayRate().AsDecimal();
+    TransformSection->SetRange(TRange<FFrameNumber>(FFrameNumber(Camera.StartFrame * TicksPerFrame), FFrameNumber(Camera.EndFrame * TicksPerFrame)));
 
-	FMovieSceneDoubleChannel* RotateX = TransformSection->GetChannelProxy().GetChannel<FMovieSceneDoubleChannel>(3);
-	FMovieSceneDoubleChannel* RotateY = TransformSection->GetChannelProxy().GetChannel<FMovieSceneDoubleChannel>(4);
-	FMovieSceneDoubleChannel* RotateZ = TransformSection->GetChannelProxy().GetChannel<FMovieSceneDoubleChannel>(5);
+    // Get channels for translation and rotation
+    FMovieSceneDoubleChannel* TranslateX = TransformSection->GetChannelProxy().GetChannel<FMovieSceneDoubleChannel>(0);
+    FMovieSceneDoubleChannel* TranslateY = TransformSection->GetChannelProxy().GetChannel<FMovieSceneDoubleChannel>(1);
+    FMovieSceneDoubleChannel* TranslateZ = TransformSection->GetChannelProxy().GetChannel<FMovieSceneDoubleChannel>(2);
 
-	UE::FVtValue UsdValue;
-	for (double Time : Camera.TransTimeSamples)
-	{		
-		int KeyInt = static_cast<int>(Time);
-		FFrameNumber FrameNumber = FFrameNumber(KeyInt * TicksPerFrame);
-		if (Camera.Translation.Get(UsdValue, Time))
-		{
-			pxr::VtValue PxrValue = UsdValue.GetUsdValue();
-			if (PxrValue.IsHolding<pxr::GfVec3d>())
-			{
-				pxr::GfVec3d Translation = PxrValue.Get<pxr::GfVec3d>();
-				TranslateX->AddConstantKey(FrameNumber, Translation[0]);
-				TranslateY->AddConstantKey(FrameNumber, Translation[2]);
-				TranslateZ->AddConstantKey(FrameNumber, Translation[1]);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("Translation value is not holding GfVec3d at time %d"), KeyInt);
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to get translation value at time %d"), KeyInt);
-		}
-	}
+    FMovieSceneDoubleChannel* RotateX = TransformSection->GetChannelProxy().GetChannel<FMovieSceneDoubleChannel>(3);
+    FMovieSceneDoubleChannel* RotateY = TransformSection->GetChannelProxy().GetChannel<FMovieSceneDoubleChannel>(4);
+    FMovieSceneDoubleChannel* RotateZ = TransformSection->GetChannelProxy().GetChannel<FMovieSceneDoubleChannel>(5);
 
-	for (double Time : Camera.RotTimeSamples)
-	{
-		int KeyInt = static_cast<int>(Time);
-		FFrameNumber FrameNumber = FFrameNumber(KeyInt * TicksPerFrame);
-		if (Camera.Rotation.Get(UsdValue, Time))
-		{
-			pxr::VtValue PxrValue = UsdValue.GetUsdValue();
-			if (PxrValue.IsHolding<pxr::GfVec3f>())
-			{
-				pxr::GfVec3f Rotation = PxrValue.Get<pxr::GfVec3f>();
-				RotateX->AddConstantKey(FrameNumber, Rotation[2]);
-				RotateY->AddConstantKey(FrameNumber, Rotation[0]);
-				RotateZ->AddConstantKey(FrameNumber, (Rotation[1] * -1) - 90);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("Rotation value is not holding GfVec3f at time %d"), KeyInt);
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Failed to get rotation value at time %d"), KeyInt);
-		}
-	}
+    UE::FVtValue UsdValue;
 
-	TransformTrack->AddSection(*TransformSection);
+    // Add translation keyframes
+    for (double Time : Camera.TransTimeSamples)
+    {		
+        int KeyInt = static_cast<int>(Time);
+        FFrameNumber FrameNumber = FFrameNumber(KeyInt * TicksPerFrame);
+    	FVector Translation = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedVec3Attribute(StageActor, Camera.CameraName, "xformOp:translate", Time);
+    	if (Translation.IsZero())
+    	{
+    		UE_LOG(LogTemp, Warning, TEXT("Zero vector found when finding translate attribute"))
+    	}
+    	TranslateX->AddConstantKey(FrameNumber, Translation[0]);
+    	TranslateY->AddConstantKey(FrameNumber, Translation[2]);
+    	TranslateZ->AddConstantKey(FrameNumber, Translation[1]);
+    }
 
+    // Add rotation keyframes
+    for (double Time : Camera.RotTimeSamples)
+    {
+        int KeyInt = static_cast<int>(Time);
+        FFrameNumber FrameNumber = FFrameNumber(KeyInt * TicksPerFrame);
+    	FVector Rotation = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedVec3Attribute(StageActor, Camera.CameraName, "xformOp:rotateXYZ", Time);
+    	if (Rotation.IsZero())
+    	{
+    		UE_LOG(LogTemp, Warning, TEXT("Zero vector found when finding rotation attribute"))
+    	}
+    	RotateX->AddConstantKey(FrameNumber, Rotation[2]);
+    	RotateY->AddConstantKey(FrameNumber, Rotation[0]);
+    	RotateZ->AddConstantKey(FrameNumber, (Rotation[1] * -1) - 90);
+    }
+
+    // Add the transform section to the track
+    TransformTrack->AddSection(*TransformSection);
 }
 
+
+/**
+ * @brief Disables manual focus for the specified CineCameraActor.
+ * 
+ * @param CameraActor The camera actor for which to disable manual focus.
+ */
 void FUSDCameraFrameRangesModule::DisableManualFocus(TObjectPtr<ACineCameraActor> CameraActor)
 {
 	FCameraFocusSettings FocusSettings;
 	FocusSettings.FocusMethod = ECameraFocusMethod::DoNotOverride;
 
-	CameraActor->GetCineCameraComponent()->SetFocusSettings(FocusSettings);	
+	CameraActor->GetCineCameraComponent()->SetFocusSettings(FocusSettings);    
 }
 
-
-void FUSDCameraFrameRangesModule::PluginButtonClicked()
-{
-	FGlobalTabmanager::Get()->TryInvokeTab(USDCameraFrameRangesTabName);	
-}
-
-
+/**
+ * @brief Retrieves camera information from the Usd stage associated with StageActor.
+ *
+ * Runs through all of the cameras found within the Usd file to find the
+ * name, path, Translation and Rotation attribute and timesamples,
+ * start and end frame, focal length, focus distance, FStop,
+ * and horizontal and vertical aperture
+ * 
+ * @return TArray<FCameraInfo> An array of FCameraInfo structures containing details about each camera found in the USD stage.
+ */
 TArray<FCameraInfo> FUSDCameraFrameRangesModule::GetCamerasFromUSDStage()
 {
     TArray<FCameraInfo> Cameras;
 
+    // Check if StageActor is valid
     if (!StageActor)
     {
         UE_LOG(LogTemp, Warning, TEXT("StageActor is null."));
         return Cameras;
     }
 
+    // Get the Usd stage from StageActor
     UE::FUsdStage StageBase = StageActor->GetUsdStage();
     UE::FUsdPrim root = StageBase.GetPseudoRoot();
 
+    // Array to hold the paths of all cameras
     TArray<UE::FSdfPath> CameraPaths;
     TraverseAndCollectCameras(root, CameraPaths);
 
+    // Check if any cameras were found
     if (CameraPaths.Num() == 0)
     {
         UE_LOG(LogTemp, Warning, TEXT("No cameras found in the USD Stage."));
         return Cameras;
     }
 
+    // Iterate through each camera path found
     for (UE::FSdfPath path : CameraPaths)
     {
         UE::FUsdPrim CurrentPrim = StageBase.GetPrimAtPath(path);
@@ -726,17 +819,21 @@ TArray<FCameraInfo> FUSDCameraFrameRangesModule::GetCamerasFromUSDStage()
             continue;
         }
 
+        // Create a new FCameraInfo structure to hold the camera's details
         FCameraInfo CameraInfo;
         CameraInfo.CameraName = CurrentPrim.GetName().ToString();
         
+        // Get translation and rotation attributes for the camera
         CameraInfo.Translation = CurrentPrim.GetAttribute(TEXT("xformOp:translate"));
         CameraInfo.Rotation = CurrentPrim.GetAttribute(TEXT("xformOp:rotateXYZ"));
 
         if (CameraInfo.Rotation && CameraInfo.Translation)
         {
+            // Get time samples for the translation and rotation attributes
             CameraInfo.Rotation.GetTimeSamples(CameraInfo.RotTimeSamples);
             CameraInfo.Translation.GetTimeSamples(CameraInfo.TransTimeSamples);
             
+            // Determine the start and end frames based on time samples
             if (CameraInfo.RotTimeSamples.Num() > 1 || CameraInfo.TransTimeSamples.Num() > 1)
             {
                 if (CameraInfo.RotTimeSamples.Num() > CameraInfo.TransTimeSamples.Num())
@@ -764,13 +861,15 @@ TArray<FCameraInfo> FUSDCameraFrameRangesModule::GetCamerasFromUSDStage()
                 CameraInfo.EndFrame = 1;
             }
 
-        	CameraInfo.FocalLength = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("focalLength")), 1.0);
-        	CameraInfo.FocusDistance = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("focusDistance")), 1.0);
-        	CameraInfo.FStop = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("fStop")), 1.0);
-        	CameraInfo.HorizontalAperture = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("horizontalAperture")), 1.0);
-        	CameraInfo.VerticalAperture = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("verticalAperture")), 1.0);
+            // Retrieve additional camera attributes
+            CameraInfo.FocalLength = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("focalLength")), 1.0);
+            CameraInfo.FocusDistance = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("focusDistance")), 1.0);
+            CameraInfo.FStop = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("fStop")), 1.0);
+            CameraInfo.HorizontalAperture = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("horizontalAperture")), 1.0);
+            CameraInfo.VerticalAperture = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("verticalAperture")), 1.0);
 
-        	Cameras.Add(CameraInfo);
+            // Add the camera info to the array
+            Cameras.Add(CameraInfo);
         }
         else
         {
@@ -782,37 +881,57 @@ TArray<FCameraInfo> FUSDCameraFrameRangesModule::GetCamerasFromUSDStage()
 }
 
 
+/**
+ * @brief Recursively traverses the Usd stage to collect camera prim paths.
+ * 
+ * @param CurrentPrim The current Usd prim being examined.
+ * @param OutCameraPaths Array to store the paths of found camera prims.
+ */
 void FUSDCameraFrameRangesModule::TraverseAndCollectCameras(const UE::FUsdPrim& CurrentPrim,
 	TArray<UE::FSdfPath>& OutCameraPaths)
 {
+    // Check if the current prim is of type "Camera"
 	if (CurrentPrim.IsA(FName(TEXT("Camera"))))
 	{
+		// Add prim path to array if it is
 		UE::FSdfPath path = CurrentPrim.GetPrimPath();
 		OutCameraPaths.Add(path);
-        UE_LOG(LogTemp, Log, TEXT("Camera found at path: %s"), *path.GetString());
 	}
 
+    // Recursively traverse child prims
 	for (UE::FUsdPrim& Child : CurrentPrim.GetChildren())
 	{
-		UE_LOG(LogTemp, Log, TEXT("Traversing from %s, type: %s"), *Child.GetName().ToString(), *Child.GetTypeName().ToString());
 		TraverseAndCollectCameras(Child, OutCameraPaths);
 	}
 }
 
-
+/**
+ * @brief Recursively traverses the Usd stage to collect material information.
+ *
+ * This is specifically looking for materials under 'Shader' in the Usd.
+ * Out of Maya, this is after the shading group which appears as mtl. This may need
+ * adjustments for different workflows.
+ * 
+ * @param CurrentPrim The current Usd prim being examined.
+ * @param MaterialNames Array to store material information found in the stage.
+ */
 void FUSDCameraFrameRangesModule::TraverseAndCollectMaterials(const UE::FUsdPrim& CurrentPrim, TArray<FMaterialInfo>& MaterialNames)
 {
+    // Get the Usd stage from StageActor
 	UE::FUsdStage Stage = StageActor->GetUsdStage();
 	if (!CurrentPrim)
 	{
 		return;
 	}
 
-	
+    // Define the relationship name for material bindings
 	const TCHAR* RelationshipName = TEXT("material:binding");
+
+    // Check if the current prim has a material binding relationship
 	if (UE::FUsdRelationship MaterialBindingRel = CurrentPrim.GetRelationship(RelationshipName))
 	{
 		TArray<UE::FSdfPath> TargetPaths;
+        // Get the target paths for the material binding relationship
 		bool bTargets = MaterialBindingRel.GetTargets(TargetPaths);
 		if (bTargets)
 		{
@@ -820,18 +939,22 @@ void FUSDCameraFrameRangesModule::TraverseAndCollectMaterials(const UE::FUsdPrim
 			{
 				UE_LOG(LogTemp, Log, TEXT("Current prim: %s Target path: %s"), *CurrentPrim.GetName().ToString(), *Path.GetString());
 
+                // Get the prim at the target path
 				if (UE::FUsdPrim MaterialPrim = Stage.GetPrimAtPath(Path))
 				{
 					FString MaterialName = MaterialPrim.GetName().ToString();
 					UE_LOG(LogTemp, Log, TEXT("Material found: %s"), *MaterialName);
 
+                    // Iterate through child prims of the material prim
 					for (UE::FUsdPrim ChildPrim : MaterialPrim.GetChildren())
 					{
+                        // Check if the child prim is a shader
 						if (ChildPrim.IsA("Shader"))
 						{
 							FString ShaderName = ChildPrim.GetName().ToString();
 							UE_LOG(LogTemp, Log, TEXT("Shader found: %s"), *ShaderName);
 
+                            // Create and populate a FMaterialInfo structure
 							FMaterialInfo MaterialInfo;
 							MaterialInfo.ObjName = CurrentPrim.GetName().ToString();
 							MaterialInfo.MatName = ShaderName;
@@ -839,7 +962,7 @@ void FUSDCameraFrameRangesModule::TraverseAndCollectMaterials(const UE::FUsdPrim
 
 							UE_LOG(LogTemp, Log, TEXT("Adding material info, ObjName: %s MatName: %s PrimPath: %s"), *MaterialInfo.ObjName,  *MaterialInfo.MatName, *MaterialInfo.PrimPath.GetString());
 
-							
+                            // Add the material info to the array
 							MaterialNames.Add(MaterialInfo);
 						}
 					}
@@ -848,12 +971,14 @@ void FUSDCameraFrameRangesModule::TraverseAndCollectMaterials(const UE::FUsdPrim
 		}
 	}
 
+    // Recursively traverse child prims for additional materials
 	for (pxr::UsdPrim ChildPrim : CurrentPrim.GetChildren())
 	{
 		UE::FUsdPrim UEChildPrim(ChildPrim);
 		TraverseAndCollectMaterials(UEChildPrim, MaterialNames);
 	}
 }
+
 
 #undef LOCTEXT_NAMESPACE
 	

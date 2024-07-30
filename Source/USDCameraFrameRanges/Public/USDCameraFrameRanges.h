@@ -125,7 +125,7 @@ private:
 
     /**
      * @brief Handles the button click event for exporting attributes.
-     * @param InputPrim The USD prim from which attributes will be exported.
+     * @param InputPrim The Usd prim from which attributes will be exported.
      * @param InputAttr The specific attribute to export.
      * @param LevelSequencePath The path to the level sequence where the export will occur.
      * @return The reply indicating the result of the button click.
@@ -159,12 +159,12 @@ private:
     TArray<UMaterial*>* GetAllMaterials();
 
     /**
-     * @brief Adds a camera to a level sequence.
+     * @brief Adds a duplicate Usd camera to a level sequence with all of its keyframes.
      * @param LevelSequencePath The path to the level sequence where the camera will be added.
      * @param CameraActor The CineCameraActor to be added.
      * @param Camera The camera information to be added.
      */
-    void AddCameraToLevelSequence(FString LevelSequencePath, TObjectPtr<ACineCameraActor> CameraActor, FCameraInfo Camera);
+    void AddCameraToLevelSequence(const FString& LevelSequencePath, const TObjectPtr<ACineCameraActor>& CameraActor, FCameraInfo Camera);
 
     /**
      * @brief Disables manual focus on a CineCameraActor.

@@ -8,6 +8,8 @@ public class UsdAttributeFunctionLibrary : ModuleRules
     public UsdAttributeFunctionLibrary(ReadOnlyTargetRules Target) : base(Target)
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        
+        // Required to access from other modules
         PublicDefinitions.Add("USDATTRIBUTELIBRARY_API=__declspec(dllexport)");
         
         // Add public dependency modules
@@ -35,6 +37,8 @@ public class UsdAttributeFunctionLibrary : ModuleRules
             }
         );
 
+        
+        // Required for runtime usd functionality
         bool bEnableUsdSdk = EnableUsdSdk(Target);
 
         if (bEnableUsdSdk)
