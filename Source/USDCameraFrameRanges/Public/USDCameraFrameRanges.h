@@ -79,7 +79,7 @@ public:
 
     
 
-private:
+// private:
     /**
      * @brief Registers the plugin's menus and commands.
      */

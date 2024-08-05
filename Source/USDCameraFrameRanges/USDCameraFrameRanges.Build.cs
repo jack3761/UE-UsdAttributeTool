@@ -28,6 +28,7 @@ public class USDCameraFrameRanges : ModuleRules
 				"Core",
 				// ... add other public dependencies that you statically link with here ...
 				"UsdAttributeFunctionLibrary",
+				"AutomationTest"
 			}
 			);
 			
@@ -53,6 +54,7 @@ public class USDCameraFrameRanges : ModuleRules
 				"MovieSceneTracks",
 				"LevelSequence", 
 				"UsdAttributeFunctionLibrary",
+				"AutomationTest"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

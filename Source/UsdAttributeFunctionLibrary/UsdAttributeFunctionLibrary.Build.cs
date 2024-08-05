@@ -18,7 +18,8 @@ public class UsdAttributeFunctionLibrary : ModuleRules
             {
                 "Core",
                 "UnrealUSDWrapper",
-                "Boost"
+                "Boost",
+                "AutomationTest"
             }
         );
                 
@@ -26,6 +27,8 @@ public class UsdAttributeFunctionLibrary : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new string[]
             {
+                "Projects",
+                "EditorFramework",
                 "CoreUObject",
                 "Engine",
                 "Slate",
@@ -33,7 +36,8 @@ public class UsdAttributeFunctionLibrary : ModuleRules
                 "USDStage",
                 "UnrealUSDWrapper",
                 "USDUtilities",
-                "Boost"
+                "Boost",
+                "AutomationTest"
             }
         );
 
