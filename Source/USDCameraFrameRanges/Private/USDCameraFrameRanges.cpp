@@ -155,6 +155,8 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
             ];
     }
 
+	FindCameraMainFrameRanges(Cameras);
+
     // Create input text boxes for sequence path, prim name, and attribute name
     TSharedPtr<SEditableTextBox> SequenceInputTextBox = SNew(SEditableTextBox);
     TSharedPtr<SEditableTextBox> PrimInputTextBox = SNew(SEditableTextBox);
@@ -234,16 +236,22 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
     [
         SNew(SHorizontalBox)
         + SHorizontalBox::Slot()
-        .FillWidth(0.4)
+        .FillWidth(0.25)
         [
             SNew(STextBlock)
             .Text(FText::FromString(TEXT("Camera name")))
         ]
         + SHorizontalBox::Slot()
-        .FillWidth(0.4)
+        .FillWidth(0.25)
         [
             SNew(STextBlock)
             .Text(FText::FromString("Frame range"))
+        ]
+    	+ SHorizontalBox::Slot()
+	    .FillWidth(0.25)
+        [
+            SNew(STextBlock)
+            .Text(FText::FromString("Camera Main Frame range"))
         ]
         + SHorizontalBox::Slot()
         .AutoWidth()
@@ -265,17 +273,25 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
             [
                 SNew(SHorizontalBox)
                 + SHorizontalBox::Slot()
-                .FillWidth(0.4)
+                .FillWidth(0.25)
                 [
                     SNew(STextBlock)
                     .Text(FText::FromString(Camera.CameraName))
                 ]
                 + SHorizontalBox::Slot()
-                .FillWidth(0.4)
+                .FillWidth(0.25)
                 [
                     SNew(STextBlock)
                     .Text(FText::FromString(FString::Printf(TEXT("%d - %d"), Camera.StartFrame, Camera.EndFrame)))
                 ]
+            	+ SHorizontalBox::Slot()
+				.FillWidth(0.25)
+				[
+					Camera.inCameraMain ? SNew(STextBlock)
+						.Text(FText::FromString(FString::Printf(TEXT("%d - %d"), Camera.CameraMainStartFrame, Camera.CameraMainEndFrame)))
+					: SNew(STextBlock)
+						.Text(FText::FromString("n/a"))
+				]
                 + SHorizontalBox::Slot()
                 .AutoWidth()
                 [
@@ -664,7 +680,7 @@ TArray<UMaterial*>* FUSDCameraFrameRangesModule::GetAllMaterials()
 		UMaterial* obj = Cast<UMaterial>(asset.GetAsset());
 		if (obj)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Asset: %s, type: %s"), *obj->GetName(), *obj->GetClass()->GetName());
+			// UE_LOG(LogTemp, Warning, TEXT("Asset: %s, type: %s"), *obj->GetName(), *obj->GetClass()->GetName());
 			Assets->Add(obj);
 		}
 	}
@@ -771,6 +787,46 @@ void FUSDCameraFrameRangesModule::DisableManualFocus(TObjectPtr<ACineCameraActor
 	FocusSettings.FocusMethod = ECameraFocusMethod::DoNotOverride;
 
 	CameraActor->GetCineCameraComponent()->SetFocusSettings(FocusSettings);    
+}
+
+void FUSDCameraFrameRangesModule::FindCameraMainFrameRanges(TArray<FCameraInfo>& Cameras)
+{
+	UE::FUsdAttribute CameraNumberAttr = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal(StageActor, "cameraMain", "cameraNumber");
+
+	TArray<double> CameraNumberTimeSamples;
+
+	bool bSuccess = CameraNumberAttr.GetTimeSamples(CameraNumberTimeSamples);
+
+
+	int currentVal = 0;
+	int32 prevTime = 0;
+	for (double Time : CameraNumberTimeSamples)
+	{
+		int prevVal = currentVal;
+		currentVal = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedIntAttribute(StageActor, "cameraMain", "cameraNumber", Time);
+
+		if (currentVal == prevVal)
+		{
+			// UE_LOG(LogTemp, Log, TEXT("Frame range found for camera%d with times %d and %f"), currentVal, prevTime, Time);
+			FString CurrentName = TEXT("camera") + FString::FromInt(currentVal);
+			for (FCameraInfo& Camera : Cameras)
+			{
+				if (Camera.CameraName == CurrentName)
+				{
+					Camera.CameraMainStartFrame = prevTime;
+					Camera.CameraMainEndFrame = static_cast<int32>(Time);
+					Camera.inCameraMain = true;
+					UE_LOG(LogTemp, Log, TEXT("Frame range found for %s with times %d and %d"), *Camera.CameraName, Camera.CameraMainStartFrame, Camera.CameraMainEndFrame);
+
+					break;
+				}
+			}
+		}
+
+		// UE_LOG(LogTemp, Log, TEXT("%f : Camera%d "), Time, currentVal);
+
+		prevTime = static_cast<int32>(Time);
+	}
 }
 
 /**
@@ -890,6 +946,14 @@ TArray<FCameraInfo> FUSDCameraFrameRangesModule::GetCamerasFromUSDStage()
 void FUSDCameraFrameRangesModule::TraverseAndCollectCameras(const UE::FUsdPrim& CurrentPrim,
 	TArray<UE::FSdfPath>& OutCameraPaths)
 {
+
+	// Ensure there is a valid prim
+	if (!CurrentPrim.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No valid prim found on the UsdStageActor"))
+		return;
+	}
+	
     // Check if the current prim is of type "Camera"
 	if (CurrentPrim.IsA(FName(TEXT("Camera"))))
 	{
@@ -937,13 +1001,13 @@ void FUSDCameraFrameRangesModule::TraverseAndCollectMaterials(const UE::FUsdPrim
 		{
 			for (const UE::FSdfPath& Path : TargetPaths)
 			{
-				UE_LOG(LogTemp, Log, TEXT("Current prim: %s Target path: %s"), *CurrentPrim.GetName().ToString(), *Path.GetString());
+				// UE_LOG(LogTemp, Log, TEXT("Current prim: %s Target path: %s"), *CurrentPrim.GetName().ToString(), *Path.GetString());
 
                 // Get the prim at the target path
 				if (UE::FUsdPrim MaterialPrim = Stage.GetPrimAtPath(Path))
 				{
 					FString MaterialName = MaterialPrim.GetName().ToString();
-					UE_LOG(LogTemp, Log, TEXT("Material found: %s"), *MaterialName);
+					// UE_LOG(LogTemp, Log, TEXT("Material found: %s"), *MaterialName);
 
                     // Iterate through child prims of the material prim
 					for (UE::FUsdPrim ChildPrim : MaterialPrim.GetChildren())
@@ -952,7 +1016,7 @@ void FUSDCameraFrameRangesModule::TraverseAndCollectMaterials(const UE::FUsdPrim
 						if (ChildPrim.IsA("Shader"))
 						{
 							FString ShaderName = ChildPrim.GetName().ToString();
-							UE_LOG(LogTemp, Log, TEXT("Shader found: %s"), *ShaderName);
+							// UE_LOG(LogTemp, Log, TEXT("Shader found: %s"), *ShaderName);
 
                             // Create and populate a FMaterialInfo structure
 							FMaterialInfo MaterialInfo;
@@ -960,7 +1024,7 @@ void FUSDCameraFrameRangesModule::TraverseAndCollectMaterials(const UE::FUsdPrim
 							MaterialInfo.MatName = ShaderName;
 							MaterialInfo.PrimPath = CurrentPrim.GetPrimPath();
 
-							UE_LOG(LogTemp, Log, TEXT("Adding material info, ObjName: %s MatName: %s PrimPath: %s"), *MaterialInfo.ObjName,  *MaterialInfo.MatName, *MaterialInfo.PrimPath.GetString());
+							// UE_LOG(LogTemp, Log, TEXT("Adding material info, ObjName: %s MatName: %s PrimPath: %s"), *MaterialInfo.ObjName,  *MaterialInfo.MatName, *MaterialInfo.PrimPath.GetString());
 
                             // Add the material info to the array
 							MaterialNames.Add(MaterialInfo);

@@ -32,6 +32,9 @@ struct FCameraInfo
     TArray<double> TransTimeSamples;
     int32 StartFrame;
     int32 EndFrame;
+    int32 CameraMainStartFrame;
+    int32 CameraMainEndFrame;
+    bool inCameraMain = false;
     float FocalLength;
     float FocusDistance;
     float FStop;
@@ -171,6 +174,8 @@ public:
      * @param CameraActor The CineCameraActor on which manual focus will be disabled.
      */
     static void DisableManualFocus(TObjectPtr<ACineCameraActor> CameraActor);
+
+    void FindCameraMainFrameRanges(TArray<FCameraInfo>& Cameras);
 
 private:
     /**
