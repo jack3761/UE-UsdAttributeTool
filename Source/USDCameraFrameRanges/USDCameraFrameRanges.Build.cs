@@ -8,6 +8,7 @@ public class USDCameraFrameRanges : ModuleRules
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
+		
 		PublicIncludePaths.AddRange(
 			new string[] {
 				// ... add public include paths required here ...
@@ -28,7 +29,6 @@ public class USDCameraFrameRanges : ModuleRules
 				"Core",
 				// ... add other public dependencies that you statically link with here ...
 				"UsdAttributeFunctionLibrary",
-				"AutomationTest"
 			}
 			);
 			
@@ -39,7 +39,7 @@ public class USDCameraFrameRanges : ModuleRules
 				"Projects",
 				"InputCore",
 				"EditorFramework",
-				"UnrealEd",
+				// "UnrealEd",
 				"ToolMenus",
 				"CoreUObject",
 				"Engine",
@@ -54,7 +54,6 @@ public class USDCameraFrameRanges : ModuleRules
 				"MovieSceneTracks",
 				"LevelSequence", 
 				"UsdAttributeFunctionLibrary",
-				"AutomationTest"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
@@ -67,9 +66,14 @@ public class USDCameraFrameRanges : ModuleRules
 			}
 			);
 		
-		if (Target.bBuildEditor)
+		if (Target.Type == TargetRules.TargetType.Editor)
 		{
-			PrivateDependencyModuleNames.AddRange(new string[] { "UnrealEd" });
+			PrivateDependencyModuleNames.AddRange(
+				new string[]
+				{
+					"UnrealEd"
+				}
+			);
 		}
 	}
 }

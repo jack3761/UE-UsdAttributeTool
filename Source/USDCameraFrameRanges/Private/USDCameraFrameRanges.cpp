@@ -251,7 +251,7 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
 	    .FillWidth(0.25)
         [
             SNew(STextBlock)
-            .Text(FText::FromString("Camera Main Frame range"))
+            .Text(FText::FromString("Camera Main Frame Range"))
         ]
         + SHorizontalBox::Slot()
         .AutoWidth()
@@ -788,46 +788,72 @@ void FUSDCameraFrameRangesModule::DisableManualFocus(TObjectPtr<ACineCameraActor
 
 	CameraActor->GetCineCameraComponent()->SetFocusSettings(FocusSettings);    
 }
-
+/**
+ * Find and add the frame ranges from cameraMain's camera number attribute to the FCameraInfo structs.
+ *
+ * @param Cameras An array of FCameraInfo objects representing the cameras found in the Usd file.
+ */
 void FUSDCameraFrameRangesModule::FindCameraMainFrameRanges(TArray<FCameraInfo>& Cameras)
 {
-	UE::FUsdAttribute CameraNumberAttr = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal(StageActor, "cameraMain", "cameraNumber");
+    // Get the "cameraNumber" attribute from the cameraMain prim
+    UE::FUsdAttribute CameraNumberAttr = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAttributeInternal(StageActor, "cameraMain", "cameraNumber");
 
-	TArray<double> CameraNumberTimeSamples;
+    TArray<double> CameraNumberTimeSamples;
 
-	bool bSuccess = CameraNumberAttr.GetTimeSamples(CameraNumberTimeSamples);
+    // Check if the camera number attribute was successfully retrieved
+    if (!CameraNumberAttr)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("No cameraMain or camera number attribute found"));
+        return;
+    }
 
+    // Attempt to get the time samples for the camera number attribute
+    if (bool bSuccess = CameraNumberAttr.GetTimeSamples(CameraNumberTimeSamples))
+    {
+        int currentVal = 0;    // Variable to store the current camera number
+        int32 prevTime = 0;    // Variable to store the previous time sample
 
-	int currentVal = 0;
-	int32 prevTime = 0;
-	for (double Time : CameraNumberTimeSamples)
-	{
-		int prevVal = currentVal;
-		currentVal = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedIntAttribute(StageActor, "cameraMain", "cameraNumber", Time);
+        // Iterate through each time sample
+        for (double Time : CameraNumberTimeSamples)
+        {
+            int prevVal = currentVal;    // Store the previous camera number
+        	
+            // Get the camera number at the current time sample
+            currentVal = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedIntAttribute(StageActor, "cameraMain", "cameraNumber", Time);
 
-		if (currentVal == prevVal)
-		{
-			// UE_LOG(LogTemp, Log, TEXT("Frame range found for camera%d with times %d and %f"), currentVal, prevTime, Time);
-			FString CurrentName = TEXT("camera") + FString::FromInt(currentVal);
-			for (FCameraInfo& Camera : Cameras)
-			{
-				if (Camera.CameraName == CurrentName)
-				{
-					Camera.CameraMainStartFrame = prevTime;
-					Camera.CameraMainEndFrame = static_cast<int32>(Time);
-					Camera.inCameraMain = true;
-					UE_LOG(LogTemp, Log, TEXT("Frame range found for %s with times %d and %d"), *Camera.CameraName, Camera.CameraMainStartFrame, Camera.CameraMainEndFrame);
+            // Check if the camera number has not changed since the last sample
+            if (currentVal == prevVal)
+            {
+                // Construct the current camera name based on the camera number
+                FString CurrentName = TEXT("camera") + FString::FromInt(currentVal);
 
-					break;
-				}
-			}
-		}
+                // Update the frame ranges for the camera with the matching name
+                for (FCameraInfo& Camera : Cameras)
+                {
+                    if (Camera.CameraName == CurrentName)
+                    {
+                        Camera.CameraMainStartFrame = prevTime;
+                        Camera.CameraMainEndFrame = static_cast<int32>(Time);
+                        Camera.inCameraMain = true;
+                        UE_LOG(LogTemp, Log, TEXT("Frame range found for %s with times %d and %d"), *Camera.CameraName, Camera.CameraMainStartFrame, Camera.CameraMainEndFrame);
 
-		// UE_LOG(LogTemp, Log, TEXT("%f : Camera%d "), Time, currentVal);
+                        break;  // Exit the loop once the camera is found and updated
+                    }
+                }
+            }
 
-		prevTime = static_cast<int32>(Time);
-	}
+            // Update the previous time sample
+            prevTime = static_cast<int32>(Time);
+        }
+    }
+    else
+    {
+        // Log a warning if there was an issue getting the time samples
+        UE_LOG(LogTemp, Warning, TEXT("Issue finding time samples for camera number"));
+        return;
+    }
 }
+
 
 /**
  * @brief Retrieves camera information from the Usd stage associated with StageActor.

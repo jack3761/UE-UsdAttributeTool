@@ -9,6 +9,7 @@ public class UsdAttributeFunctionLibrary : ModuleRules
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         
+        
         // Required to access from other modules
         PublicDefinitions.Add("USDATTRIBUTELIBRARY_API=__declspec(dllexport)");
         
@@ -19,7 +20,6 @@ public class UsdAttributeFunctionLibrary : ModuleRules
                 "Core",
                 "UnrealUSDWrapper",
                 "Boost",
-                "AutomationTest"
             }
         );
                 
@@ -37,7 +37,6 @@ public class UsdAttributeFunctionLibrary : ModuleRules
                 "UnrealUSDWrapper",
                 "USDUtilities",
                 "Boost",
-                "AutomationTest"
             }
         );
 

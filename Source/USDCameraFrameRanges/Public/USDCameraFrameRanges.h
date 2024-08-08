@@ -113,6 +113,13 @@ public:
     TArray<FCameraInfo> GetCamerasFromUSDStage();
 
     /**
+     * @brief Finds the frame ranges from cameraMain camera number attribute.
+     * @param Cameras reference to array containing camera information in the Usd.
+     */
+    void FindCameraMainFrameRanges(TArray<FCameraInfo>& Cameras);
+
+
+    /**
         * @brief Handles the button click event for duplicating a Usd camera.
         * @param Camera The Usd camera information to be duplicated.
         * @param LevelSequencePath The path to the level sequence where the camera will be duplicated.
@@ -175,7 +182,6 @@ public:
      */
     static void DisableManualFocus(TObjectPtr<ACineCameraActor> CameraActor);
 
-    void FindCameraMainFrameRanges(TArray<FCameraInfo>& Cameras);
 
 private:
     /**
