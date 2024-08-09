@@ -138,24 +138,7 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
             ];
     }
 
-    // Retrieve camera information from the Usd stage
-    TArray<FCameraInfo> Cameras = GetCamerasFromUSDStage();
-    if (Cameras.Num() == 0)
-    {
-        // If no cameras are found, display a message
-        return SNew(SDockTab)
-            .TabRole(ETabRole::NomadTab)
-            [
-                SNew(SBox)
-                .Padding(20)
-                [
-                    SNew(STextBlock)
-                    .Text(FText::FromString(TEXT("No cameras found in the USD Stage. Please ensure there are cameras in the USD Stage.")))
-                ]
-            ];
-    }
-
-	FindCameraMainFrameRanges(Cameras);
+   
 
     // Create input text boxes for sequence path, prim name, and attribute name
     TSharedPtr<SEditableTextBox> SequenceInputTextBox = SNew(SEditableTextBox);
@@ -261,50 +244,72 @@ TSharedRef<SDockTab> FUSDCameraFrameRangesModule::OnSpawnPluginTab(const FSpawnT
         ]
     ];
 
-    // Loop through Cameras array and create a row widget for each camera
-    for (const FCameraInfo& Camera : Cameras)
-    {
-        CameraList->AddSlot()
-        .Padding(2)
-        [
-            SNew(SVerticalBox)
-            + SVerticalBox::Slot()
-            .AutoHeight()
-            [
-                SNew(SHorizontalBox)
-                + SHorizontalBox::Slot()
-                .FillWidth(0.25)
-                [
-                    SNew(STextBlock)
-                    .Text(FText::FromString(Camera.CameraName))
-                ]
-                + SHorizontalBox::Slot()
-                .FillWidth(0.25)
-                [
-                    SNew(STextBlock)
-                    .Text(FText::FromString(FString::Printf(TEXT("%d - %d"), Camera.StartFrame, Camera.EndFrame)))
-                ]
-            	+ SHorizontalBox::Slot()
-				.FillWidth(0.25)
+	// Retrieve camera information from the Usd stage
+	TArray<FCameraInfo> Cameras = GetCamerasFromUSDStage();
+	if (Cameras.Num() == 0)
+	{
+		// If no cameras are found, display a message
+		CameraList->AddSlot()
+		.Padding(2)
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
 				[
-					Camera.inCameraMain ? SNew(STextBlock)
-						.Text(FText::FromString(FString::Printf(TEXT("%d - %d"), Camera.CameraMainStartFrame, Camera.CameraMainEndFrame)))
-					: SNew(STextBlock)
-						.Text(FText::FromString("n/a"))
+					SNew(STextBlock)
+					.Text(FText::FromString(TEXT("No cameras found in the USD Stage. Please ensure there are cameras in the USD Stage.")))
 				]
-                + SHorizontalBox::Slot()
-                .AutoWidth()
-                [
-                    SNew(SButton)
-                    .Text(FText::FromString(TEXT("Duplicate")))
-                    .OnClicked_Lambda([this, Camera, SequenceInputTextBox]()
-                    {
-                        return OnDuplicateButtonClicked(Camera, SequenceInputTextBox->GetText().ToString());
-                    })
-                ]
-            ]
-        ];
-    }
+			];
+	}
+	else
+	{
+		FindCameraMainFrameRanges(Cameras);
+
+		// Loop through Cameras array and create a row widget for each camera
+		for (const FCameraInfo& Camera : Cameras)
+		{
+			CameraList->AddSlot()
+			.Padding(2)
+			[
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.FillWidth(0.25)
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString(Camera.CameraName))
+					]
+					+ SHorizontalBox::Slot()
+					.FillWidth(0.25)
+					[
+						SNew(STextBlock)
+						.Text(FText::FromString(FString::Printf(TEXT("%d - %d"), Camera.StartFrame, Camera.EndFrame)))
+					]
+					+ SHorizontalBox::Slot()
+					.FillWidth(0.25)
+					[
+						Camera.inCameraMain ? SNew(STextBlock)
+							.Text(FText::FromString(FString::Printf(TEXT("%d - %d"), Camera.CameraMainStartFrame, Camera.CameraMainEndFrame)))
+						: SNew(STextBlock)
+							.Text(FText::FromString("n/a"))
+					]
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					[
+						SNew(SButton)
+						.Text(FText::FromString(TEXT("Duplicate")))
+						.OnClicked_Lambda([this, Camera, SequenceInputTextBox]()
+						{
+							return OnDuplicateButtonClicked(Camera, SequenceInputTextBox->GetText().ToString());
+						})
+					]
+				]
+			];
+		}
+	}
 
     // Create and return the final tab layout with scroll boxes and buttons
     return SNew(SDockTab)
