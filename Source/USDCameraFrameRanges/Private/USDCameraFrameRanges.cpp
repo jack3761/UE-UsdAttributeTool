@@ -916,32 +916,51 @@ TArray<FCameraInfo> FUSDCameraFrameRangesModule::GetCamerasFromUSDStage()
             CameraInfo.Translation.GetTimeSamples(CameraInfo.TransTimeSamples);
             
             // Determine the start and end frames based on time samples
-            if (CameraInfo.RotTimeSamples.Num() > 1 || CameraInfo.TransTimeSamples.Num() > 1)
-            {
-                if (CameraInfo.RotTimeSamples.Num() > CameraInfo.TransTimeSamples.Num())
-                {
-                    if (CameraInfo.RotTimeSamples[1] == 2.0)
-                        CameraInfo.StartFrame = CameraInfo.RotTimeSamples[0];
-                    else
-                        CameraInfo.StartFrame = CameraInfo.RotTimeSamples[1];
+        	if (CameraInfo.RotTimeSamples.Num() > 1 || CameraInfo.TransTimeSamples.Num() > 1)
+        	{
+        		if (CameraInfo.RotTimeSamples.Num() > CameraInfo.TransTimeSamples.Num())
+        		{
+        			// Ensure RotTimeSamples has at least 2 elements
+        			if (CameraInfo.RotTimeSamples.Num() > 1)
+        			{
+        				if (CameraInfo.RotTimeSamples[1] == 2.0)
+        					CameraInfo.StartFrame = CameraInfo.RotTimeSamples[0];
+        				else
+        					CameraInfo.StartFrame = CameraInfo.RotTimeSamples[1];
+        			}
+        			else
+        			{
+        				// Handle case where there is only one element
+        				CameraInfo.StartFrame = CameraInfo.RotTimeSamples[0];
+        			}
 
-                    CameraInfo.EndFrame = CameraInfo.RotTimeSamples.Last();
-                }
-                else
-                {
-                    if (CameraInfo.RotTimeSamples[1] == 2.0)
-                        CameraInfo.StartFrame = CameraInfo.RotTimeSamples[0];
-                    else
-                        CameraInfo.StartFrame = CameraInfo.RotTimeSamples[1];
+        			CameraInfo.EndFrame = CameraInfo.RotTimeSamples.Last();
+        		}
+        		else
+        		{
+        			// Ensure TransTimeSamples has at least 2 elements
+        			if (CameraInfo.TransTimeSamples.Num() > 1)
+        			{
+        				if (CameraInfo.TransTimeSamples[1] == 2.0)
+        					CameraInfo.StartFrame = CameraInfo.TransTimeSamples[0];
+        				else
+        					CameraInfo.StartFrame = CameraInfo.TransTimeSamples[1];
+        			}
+        			else
+        			{
+        				// Handle case where there is only one element
+        				CameraInfo.StartFrame = CameraInfo.TransTimeSamples[0];
+        			}
 
-                    CameraInfo.EndFrame = CameraInfo.TransTimeSamples.Last();
-                }
-            }
-            else
-            {
-                CameraInfo.StartFrame = 1;
-                CameraInfo.EndFrame = 1;
-            }
+        			CameraInfo.EndFrame = CameraInfo.TransTimeSamples.Last();
+        		}
+        	}
+        	else
+        	{
+        		CameraInfo.StartFrame = 1;
+        		CameraInfo.EndFrame = 1;
+        	}
+
 
             // Retrieve additional camera attributes
             CameraInfo.FocalLength = UUsdAttributeFunctionLibraryBPLibrary::GetUsdAnimatedFloatAttribute(StageActor, CameraInfo.CameraName, FString(TEXT("focalLength")), 1.0);

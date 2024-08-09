@@ -54,6 +54,7 @@ public class USDCameraFrameRanges : ModuleRules
 				"MovieSceneTracks",
 				"LevelSequence", 
 				"UsdAttributeFunctionLibrary",
+				
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
@@ -71,7 +72,8 @@ public class USDCameraFrameRanges : ModuleRules
 			PrivateDependencyModuleNames.AddRange(
 				new string[]
 				{
-					"UnrealEd"
+					"UnrealEd",
+					"EditorSubsystem"
 				}
 			);
 		}
