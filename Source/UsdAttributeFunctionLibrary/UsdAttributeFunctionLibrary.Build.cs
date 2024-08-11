@@ -39,6 +39,17 @@ public class UsdAttributeFunctionLibrary : ModuleRules
                 "Boost",
             }
         );
+        
+        if (Target.Type == TargetRules.TargetType.Editor)
+        {
+            PrivateDependencyModuleNames.AddRange(
+                new string[]
+                {
+                    "UnrealEd",
+                    "EditorSubsystem"
+                }
+            );
+        }
 
         
         // Required for runtime usd functionality
