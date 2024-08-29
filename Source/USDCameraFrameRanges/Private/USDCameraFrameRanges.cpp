@@ -17,11 +17,16 @@
 #include "MovieScene.h"
 #include "LevelSequencePlayer.h"
 
-#include "USDIncludesStart.h"
+
 #include "UsdWrappers/UsdStage.h"
 #include "UsdWrappers/UsdPrim.h"
 #include "UsdWrappers/UsdAttribute.h"
 #include "UsdWrappers/UsdRelationship.h"
+
+#ifndef USD_INCLUDES_START
+#include "USDIncludesStart.h"
+#endif
+
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/base/vt/value.h"

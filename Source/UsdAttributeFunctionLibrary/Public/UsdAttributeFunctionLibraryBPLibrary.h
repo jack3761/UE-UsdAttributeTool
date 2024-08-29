@@ -3,16 +3,20 @@
 #pragma once
 
 #if USE_USD_SDK
+#ifndef USD_INCLUDES_START
 #include "USDIncludesStart.h"
+#endif
 #include <pxr/base/vt/value.h>
 #include "pxr/base/vt/types.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3i.h"
+
+#include "USDIncludesEnd.h"
+
 #include "UsdWrappers/VtValue.h"
 #include "UsdWrappers/UsdAttribute.h"
-#include "USDIncludesEnd.h"
 #endif
 
 #include "Kismet/BlueprintFunctionLibrary.h"

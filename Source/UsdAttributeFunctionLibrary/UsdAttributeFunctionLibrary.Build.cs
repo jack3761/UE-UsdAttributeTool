@@ -61,8 +61,8 @@ public class UsdAttributeFunctionLibrary : ModuleRules
             string EngineDir = Path.GetFullPath(Target.RelativeEnginePath);
 
             // Paths for USD headers and libraries
-            string USDIncludeDir = Path.Combine(EngineDir, "Plugins", "Importers", "USDImporter", "Source", "ThirdParty", "USD", "include");
-            string USDLibsDir = Path.Combine(EngineDir, "Plugins", "Importers", "USDImporter", "Source", "ThirdParty", "USD", "lib");
+            string USDIncludeDir = Path.Combine(EngineDir, "Plugins", "Runtime", "USDCore", "Source", "ThirdParty", "USD", "include");
+            string USDLibsDir = Path.Combine(EngineDir, "Plugins", "Runtime", "USDCore", "Source", "ThirdParty", "USD", "lib");
 
             // Add public and private include paths for USD
             PublicIncludePaths.Add(USDIncludeDir);
@@ -104,7 +104,7 @@ public class UsdAttributeFunctionLibrary : ModuleRules
             RuntimeDependencies.Add(Path.Combine("$(TargetOutputDir)", "python311.dll"), Path.Combine(PythonBinaryTPSDir, "python311.dll"));
 
             // USD
-            foreach (string UsdLib in Directory.EnumerateFiles(Path.Combine(EngineDir, "Plugins", "Importers", "USDImporter", "Source", "ThirdParty", "USD", "lib"), "*.lib", SearchOption.AllDirectories))
+            foreach (string UsdLib in Directory.EnumerateFiles(Path.Combine(EngineDir, "Plugins", "Runtime", "USDCore", "Source", "ThirdParty", "USD", "lib"), "*.lib", SearchOption.AllDirectories))
             {
                 PublicAdditionalLibraries.Add(UsdLib);
             }
@@ -119,7 +119,7 @@ public class UsdAttributeFunctionLibrary : ModuleRules
             RuntimeDependencies.Add(Path.Combine(PythonBinaryTPSDir, "bin", "python3.11"));
 
             // USD
-            var USDBinDir = Path.Combine(EngineDir, "Plugins", "Importers", "USDImporter", "Source", "ThirdParty", "USD", "bin");
+            var USDBinDir = Path.Combine(EngineDir, "Plugins", "Runtime", "USDCore", "Source", "ThirdParty", "USD", "bin");
             foreach (string LibPath in Directory.EnumerateFiles(USDBinDir, "*.so", SearchOption.AllDirectories))
             {
                 PublicAdditionalLibraries.Add(LibPath);
@@ -136,7 +136,7 @@ public class UsdAttributeFunctionLibrary : ModuleRules
             RuntimeDependencies.Add(Path.Combine(PythonBinaryTPSDir, "lib", "libpython3.11.dylib"));
 
             // USD
-            var USDBinDir = Path.Combine(EngineDir, "Plugins", "Importers", "USDImporter", "Source", "ThirdParty", "USD", "bin");
+            var USDBinDir = Path.Combine(EngineDir, "Plugins", "Runtime", "USDCore", "Source", "ThirdParty", "USD", "bin");
             foreach (string LibPath in Directory.EnumerateFiles(USDBinDir, "*.dylib", SearchOption.AllDirectories))
             {
                 PublicDelayLoadDLLs.Add(LibPath);
