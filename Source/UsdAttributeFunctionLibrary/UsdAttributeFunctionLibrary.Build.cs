@@ -28,7 +28,6 @@ public class UsdAttributeFunctionLibrary : ModuleRules
             new string[]
             {
                 "Projects",
-                "EditorFramework",
                 "CoreUObject",
                 "Engine",
                 "Slate",
@@ -46,7 +45,8 @@ public class UsdAttributeFunctionLibrary : ModuleRules
                 new string[]
                 {
                     "UnrealEd",
-                    "EditorSubsystem"
+                    "EditorSubsystem",
+                    "EditorFramework",
                 }
             );
         }
