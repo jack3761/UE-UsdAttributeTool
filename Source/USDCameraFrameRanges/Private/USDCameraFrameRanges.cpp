@@ -22,6 +22,8 @@
 #include "UsdWrappers/UsdPrim.h"
 #include "UsdWrappers/UsdAttribute.h"
 #include "UsdWrappers/UsdRelationship.h"
+#include "USDShadeConversion.h"
+
 
 #ifndef USD_INCLUDES_START
 #include "USDIncludesStart.h"
@@ -548,6 +550,10 @@ FReply FUSDCameraFrameRangesModule::OnMaterialSwapButtonClicked()
 
                         MeshComponent->SetMaterial(0, FoundMaterial);
                         UE_LOG(LogTemp, Log, TEXT("Assigned material: %s to component: %s"), *MaterialName, *MeshComponent->GetName());
+
+                        
+                        UsdUtils::AuthorUnrealMaterialBinding(CurrentPrim, FoundMaterial->GetPathName());
+                        //UE_LOG(LogTemp, Log, TEXT("Unreal Material %s authored on prim %s"), *FoundMaterial->GetPathName(), *CurrentPrim.GetName());
                     }
                     else
                     {
